@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, FileText, User, BarChart2,
     Users, Building2, CreditCard, LifeBuoy, LogOut,
-    Upload, Cpu,
+    Upload, Cpu, ClipboardList,
 } from 'lucide-react';
 
 interface NavItem {
@@ -17,8 +17,9 @@ const navigation: NavItem[] = [
     { name: 'Dashboard',       href: '/dashboard',  icon: LayoutDashboard, roles: ['USER', 'ADMIN1', 'CUSTOMER_SUPPORT'] },
     { name: 'Tenders',         href: '/tenders',    icon: FileText,        roles: ['USER', 'ADMIN1'] },
     { name: 'Upload Docs',     href: '/upload',     icon: Upload,          roles: ['USER', 'ADMIN1'] },
-    { name: 'AI Matching',     href: '/match',      icon: Cpu,             roles: ['USER', 'ADMIN1'] },
-    { name: 'Profile',         href: '/profile',    icon: User,            roles: ['USER', 'ADMIN1'] },
+    { name: 'AI Matching',     href: '/match',          icon: Cpu,           roles: ['USER', 'ADMIN1'] },
+    { name: 'Vendor Profile',  href: '/vendor-profile', icon: ClipboardList, roles: ['USER', 'ADMIN1'] },
+    { name: 'Profile',         href: '/profile',        icon: User,          roles: ['USER', 'ADMIN1'] },
     { name: 'Analytics',       href: '/analytics',  icon: BarChart2,       roles: ['ADMIN1'] },
     { name: 'Users',           href: '/users',      icon: Users,           roles: ['ADMIN1'] },
     { name: 'Dashboard',       href: '/dashboard',  icon: LayoutDashboard, roles: ['SUPERADMIN'] },

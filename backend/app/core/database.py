@@ -14,6 +14,11 @@ async def connect_to_mongo():
     # New: documents collection index
     await db.documents.create_index("type")
     await db.documents.create_index("created_at")
+    # Vendor profiles indexes
+    await db.vendor_profiles.create_index("user_id")
+    await db.vendor_profiles.create_index("org_id")
+    await db.vendor_profiles.create_index("vendor_id", unique=True, sparse=True)
+    await db.vendor_profiles.create_index("is_active")
     print(f"[OK] Connected to MongoDB: {settings.DATABASE_NAME}")
 
 async def close_mongo_connection():

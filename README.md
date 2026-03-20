@@ -1,30 +1,48 @@
-# TenderMatch 🚀
+# TenderMatch (Phase 2) 🚀
 
-TenderMatch is an AI-powered Vendor–Tender matching engine. It leverages Generative AI (Groq LLM) to extract structured data and keywords from procurement documents (PDFs/TXTs), generates semantic embeddings using Sentence Transformers, and uses FAISS to quickly find the best tender matches for a given vendor based on semantic and keyword similarity.
+TenderMatch is an advanced, AI-powered Vendor–Tender matching engine. Moving beyond simple textual matching, Phase 2 implements a **Structured Vendor Profile system** alongside an intelligent **Structured Matching Engine**. It performs strict eligibility filtering (hard filters), calculates a granular weighted score across key business dimensions, integrates semantic AI capabilities (Sentence Transformers), and scales results based on mathematically derived profile completeness metrics. 
 
 ---
 
-## 🧠 How It Works
+## 🚀 Key Features
 
-### 1. Document Upload & Extraction
-- Users upload a Vendor Profile or a Tender Document (PDF/TXT).
-- The text is extracted and passed to **Groq's LLaMA-based LLM**, which performs structured extraction (Scope, Eligibility, Location, Certifications) and identifies domain-specific **keywords**.
+### 1. Multi-tenant B2B Architecture & RBAC
+- **Organizations & Users**: Secure registration logic separating accounts by `org_id` and `user_id`. Each document and vendor profile belongs to a specific tenant.
+- **Roles**: Enforces Route Guards separating ADMIN level controls from standard USER actions seamlessly across the React Vite frontend and FastAPI backend.
 
-### 2. Semantic Embedding
-- The extracted structured data and keywords are combined into a `search_text`.
-- The `sentence-transformers` library (using `all-MiniLM-L6-v2`) converts this text into a high-dimensional vector.
-- The same embedding model also converts the individual extracted keywords into vectors.
+### 2. Multi-phase Vendor Profile Builder
+A beautiful, modern React application that dynamically collects Vendor Data across 3 critical phases:
+- **Phase 1: Identity & Compliance**: Legal company name, GSTINs, Udyam Registration, and regulatory compliance flags (like Litigations or Debarment).
+- **Phase 2: Business & Financials**: Dynamic multi-input domains & sub-domains, annual turnover arrays, operational & registered geographies, and capability freetext indexing.
+- **Phase 3: Past Projects & Certifications**: Recording previous highest project values, ISO certifications, and mandatory domain licenses.
+*Data is saved directly to the highly-structured `vendor_profiles` collection in MongoDB.*
 
-### 3. Storage & Indexing
-- **MongoDB** stores the raw document, structured data, keywords, and keyword embeddings.
-- **FAISS (Facebook AI Similarity Search)** creates an in-memory (and disk-persisted) index for ultra-fast document-level semantic search.
+### 3. Structured Matching Engine
+Instead of just matching uploaded static PDFs, the engine evaluates a Vendor Profile dynamically against structured `tenders` in MongoDB.
 
-### 4. Matching Engine
-When a Vendor ID is queried:
-1. The **Document Vector** is compared against all Tender Vectors in FAISS (Cosine Similarity).
-2. The **Keyword Vectors** of the Vendor and Tender are cross-compared to find the best matching capabilities (Keyword Matrix Multiplication).
-3. The final score is computed dynamically (`0.75 * Semantic_Score + 0.25 * Keyword_Score`).
-4. (Optional) Groq LLM can be triggered to generate a human-readable explanation of *why* the score is high or low.
+#### Step 1: Strict Hard Eligibility Filters
+The engine automatically **disqualifies (returns 0 score)** a vendor if any of these critical requirements fail:
+1. **Blacklist Check**: Vendor must not be blacklisted or debarred.
+2. **Domain Match**: Vendor’s `primary_domains` must overlap with the tender.
+3. **Geographic Check**: Vendor must be operational/registered in the target state, or explicitly marked as `willing_to_operate_in_new_states`.
+4. **Mandatory Certifications**: Any mandatory cert array (e.g., "Valid Electrical Contract License") must fully intersect with the vendor's held licenses.
+5. **Financial Threshold**: The vendor's average annual turnover must exceed the tender's `min_avg_turnover`.
+
+#### Step 2: Weighted Field-Wise Scoring
+If the vendor passes all hard filters, a similarity score `[0, 1]` is generated across 7 weighted dimensions:
+- 📊 **Domain Match (20%)**: Primary and sub-domain exact/partial intersects.
+- 🌍 **Geography Match (15%)**: Weighted by Registered (1.0) vs Preferred (0.9) vs Operational (0.8) vs Willing to expand (0.5).
+- 💰 **Financial Capacity (15%)**: Evaluates vendor turnover against total tender estimated value.
+- 🏗️ **Experience Match (20%)**: Analyzes the magnitude of the largest previous single project against the current tender size.
+- 📜 **Certification Match (10%)**: Jaccard similarity of extra certifications against tender bonus requirements.
+- 🧠 **Semantic / Requirement Match (15%)**: Uses AI via **Sentence-Transformers** (`all-MiniLM-L6-v2`) to compare the vendor's freetext `capability_description` to the tender's overall `scope` using cosine similarity.
+- ⚖️ **Compliance & Risk (5%)**: Deductions for active litigations, ESI/PF non-compliance, etc.
+
+#### Step 3: Completeness Confidence Boost
+The raw weighted score is multiplied by the Vendor Profile's completeness percentage (`profile_completeness_pct / 100`) to generate the Final Score.
+
+#### Step 4: Explainable Output Wrapper
+The engine inserts the final result into the `match_results` MongoDB collection using a highly explicit JSON Schema wrapper detailing the granular scores, the hard-filter rationale, and a human-readable AI-Style explanation paragraph. 
 
 ---
 
@@ -34,30 +52,26 @@ When a Vendor ID is queried:
 - Python 3.10+
 - FastAPI (REST framework)
 - MongoDB & Motor (Asynchronous NoSQL Storage)
-- FAISS (Vector Indexing & Similarity Search)
-- sentence-transformers (Local Embedding Model)
-- PyMuPDF (PDF Text Extraction)
-- Groq Cloud API (LLM JSON Extraction & Explanations)
+- FAISS & sentence-transformers (Embeddings & Semantic Match)
+- PyMuPDF, jose (JWT)
 
 **Frontend:**
 - React (Vite)
 - TypeScript
-- Tailwind CSS
+- Tailwind CSS (With Glassmorphism UI)
 - Lucide Icons
-- Axios (API Calls)
+- Axios
 
 ---
 
-## 🚀 How to Run
+## 🖥️ How to Run & Test locally
 
 ### Prerequisites
 1. **Python 3.10+**
 2. **Node.js**
-3. **MongoDB Server** (Running locally on `mongodb://localhost:27017` or via Docker)
-4. **Groq API Key** (Set via changing the `config.py` default or creating a `.env` in the backend folder).
+3. **MongoDB Server** (Running locally on `mongodb://localhost:27017`)
 
-### Step 1: Start the Backend
-
+### Step 1: Start the Backend server
 Open a terminal and navigate to the `backend` folder:
 ```powershell
 cd backend
@@ -66,41 +80,28 @@ python -m venv venv
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
-*The backend API documentation will be available at: http://localhost:8000/docs*
+*API docs at: http://localhost:8000/docs*
 
-*(Note: The first time you upload a document, the `sentence-transformers` model ~90MB will be downloaded automatically).*
+### Step 2: Ingest Mock Tenders
+Open a separate terminal inside `backend` and ingest some mock test data so the database isn't empty!
+```powershell
+# Ensuring you are activating your environment first
+.\venv\Scripts\python.exe backend/scripts/ingest_tenders.py
+```
+*This inserts 10 realistic tenders into `tendermatch.tenders`.*
 
-### Step 2: Start the Frontend
-
-Open a **new, separate terminal** and navigate to the root folder:
+### Step 3: Start the Frontend Application
+Open a new terminal and navigate to the root folder:
 ```powershell
 npm install
 npm run dev
 ```
-*The frontend application will be available at: http://localhost:5173*
 
-### Step 3: Test the Application
-
-1. **Register/Login**: Open the frontend (`http://localhost:5173`), register a new user, and log in.
-2. **Upload Documents**: Navigate to the "Upload Docs" page. Upload a vendor document and a tender document. (You can use the `backend/test_vendor.txt` and `backend/test_tender.txt` as examples).
-3. **AI Matching**: Navigate to the "AI Matching" page. Copy the MongoDB ID of your uploaded vendor, paste it into the search box, and click "Find Matching Tenders".
-4. **(Optional) Run the Backend CLI Test End-to-End**: 
-   Inside the `backend` folder, you can run: `python test_matching_e2e.py` to see the complete flow without the UI.
-
----
-
-## 🔑 Environment Variables & Configuration
-
-**Backend configuration** (`backend/app/core/config.py`):
-You can override these values by creating a `backend/.env` file:
-```ini
-MONGODB_URI=mongodb://localhost:27017
-DATABASE_NAME=tendermatch
-JWT_SECRET=your_super_secret_string
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-**Frontend configuration** (`.env` at frontend root):
-```ini
-VITE_API_URL=http://localhost:8000
-```
+### Step 4: End-to-End Walkthrough
+1. **Register/Login** at `http://localhost:5173`.
+2. Navigate to **Vendor Profile** via the sidebar. 
+3. Carefully fill out all 3 phases of the structured profile Builder (ensure you add a valid Sub Domain using the `+ Add` button). Click **Submit Profile**.
+4. Navigate to **AI Matching Engine**. 
+5. Select your newly created Vendor Profile from the dropdown and hit **Run Structured Matching**.
+6. The UI will hit the new Bulk Evaluator Endpoint, running your profile simultaneously against all 10 MongoDB Tenders.
+7. Observe the incredibly detailed Match Cards highlighting your Disqualification reasons, Strong Matches, Semantic overrides, and Final Score multipliers!

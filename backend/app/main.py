@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.database import connect_to_mongo, close_mongo_connection
-from app.api import auth, organizations, users, upload, match
+from app.api import auth, organizations, users, upload, match, vendor_profiles, structured_match
 from app.services.embedding_service import get_embedding_service
 
 
@@ -43,6 +43,8 @@ app.include_router(organizations.router)
 app.include_router(users.router)
 app.include_router(upload.router)
 app.include_router(match.router)
+app.include_router(vendor_profiles.router)
+app.include_router(structured_match.router)
 
 
 @app.get("/", tags=["Health"])

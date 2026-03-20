@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
     Search, Loader2, AlertCircle, Sparkles,
-    MapPin, Award, Tag, TrendingUp, FileText, ChevronDown, ChevronUp,
+    Award, Building2, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import { matchVendor, getIndexStatus, getMyDocuments } from '../services/documentService';
-import type { MatchResult, IndexStatus, UploadedDocument } from '../types/document';
+import api from '../services/api';
+import { vendorProfileService } from '../services/vendorProfileApi';
+import type { VendorProfileResponse } from '../types/vendorProfile';
 
 // ─── Score helpers ─────────────────────────────────────────────────────────
 
@@ -65,16 +66,21 @@ function MiniBar({ label, value, color }: { label: string; value: number; color:
     );
 }
 
-
 // ─── Match card ────────────────────────────────────────────────────────────
 
-function MatchCard({ result, rank }: { result: MatchResult; rank: number }) {
+function MatchCard({ result, rank }: { result: any; rank: number }) {
     const [open, setOpen] = useState(false);
-    const color = scoreColor(result.final_score);
-    const bg    = scoreBg(result.final_score);
+    
+    const mr = result.match_result;
+    const meta = mr._meta;
+    const hardFiltersPass = mr.hard_filter_results.overall_pass;
+    const finalScore = (mr.weighted_score.final_score || 0) * 100;
+
+    const color = scoreColor(finalScore);
+    const bg    = scoreBg(finalScore);
 
     return (
-        <div className="pm-card flex flex-col gap-4" style={{ borderLeft: `4px solid ${color}` }}>
+        <div className="pm-card flex flex-col gap-4" style={{ borderLeft: `4px solid ${hardFiltersPass ? color : '#dc2626'}` }}>
             {/* Header row */}
             <div className="flex items-start gap-4">
                 {/* Rank badge */}
@@ -83,27 +89,35 @@ function MatchCard({ result, rank }: { result: MatchResult; rank: number }) {
                 </div>
 
                 {/* Score ring */}
-                <ScoreRing score={result.final_score} />
+                <ScoreRing score={hardFiltersPass ? finalScore : 0} />
 
                 {/* Main info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="text-base font-bold text-[#162f3e] truncate" style={{ fontFamily: 'Poppins' }}>
-                            {result.tender_filename || result.tender_id}
+                            Tender: {meta.tender_id}
                         </h3>
                         <span
                             className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                            style={{ background: bg, color }}
+                            style={{ background: hardFiltersPass ? bg : '#fef2f2', color: hardFiltersPass ? color : '#dc2626' }}
                         >
-                            {scoreLabel(result.final_score)}
+                            {hardFiltersPass ? scoreLabel(finalScore) : 'Disqualified'}
                         </span>
                     </div>
 
-                    {/* Score bars */}
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                        <MiniBar label="Semantic Doc" value={result.semantic_score} color="#162f3e" />
-                        <MiniBar label="Keyword Match" value={result.keyword_score} color="#c41230" />
-                    </div>
+                    {/* Breakdown bars */}
+                    {hardFiltersPass && mr.weighted_score.breakdown && (
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                            <MiniBar label="Domain / Semantic" value={mr.weighted_score.breakdown.domain_semantic_similarity?.raw_score || mr.weighted_score.breakdown.domain?.raw_score || 0} color="#162f3e" />
+                            <MiniBar label="Financial Capacity" value={mr.weighted_score.breakdown.financial_capacity_ratio?.raw_score || mr.weighted_score.breakdown.financial?.raw_score || 0} color="#c41230" />
+                        </div>
+                    )}
+                    
+                    {!hardFiltersPass && (
+                         <div className="text-sm text-red-600 mt-2 font-medium">
+                            {mr.hard_filter_results.disqualification_reason}
+                         </div>
+                    )}
                 </div>
 
                 {/* Expand toggle */}
@@ -117,92 +131,72 @@ function MatchCard({ result, rank }: { result: MatchResult; rank: number }) {
 
             {/* Quick meta */}
             <div className="flex flex-wrap gap-3">
-                {result.tender_summary?.location && (
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
-                        <MapPin className="w-3 h-3 text-[#c41230]" />
-                        {result.tender_summary.location}
-                    </span>
-                )}
-                {result.tender_summary?.certifications?.length > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
-                        <Award className="w-3 h-3 text-[#c41230]" />
-                        {result.tender_summary.certifications.slice(0, 2).join(', ')}
-                    </span>
-                )}
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <Award className="w-3 h-3 text-[#c41230]" />
+                    {mr.recommendation}
+                </span>
             </div>
 
             {/* Expanded detail */}
             {open && (
                 <div className="space-y-4 pt-3 border-t border-slate-100">
-                    {result.tender_summary?.scope && (
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Scope</p>
-                            <p className="text-sm text-[#162f3e] leading-relaxed">{result.tender_summary.scope}</p>
-                        </div>
-                    )}
+                    <div>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Recommendation Detail</p>
+                        <p className="text-sm text-[#162f3e] leading-relaxed">{mr.recommendation_detail}</p>
+                    </div>
 
-                    {result.tender_keywords?.length > 0 && (
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-                                <Tag className="w-3 h-3" /> Matched Keywords
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {result.tender_keywords.map(k => (
-                                    <span key={k} className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{k}</span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {result.explanation && (
+                    {mr.human_readable_explanation && (
                         <div className="p-3 rounded-xl bg-[#162f3e]/5 border border-[#162f3e]/10">
                             <p className="text-xs font-semibold text-[#162f3e] mb-1 flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-[#c41230]" /> AI Analysis
+                                <Sparkles className="w-3 h-3 text-[#c41230]" /> Analysis
                             </p>
-                            <p className="text-sm text-slate-600 leading-relaxed">{result.explanation}</p>
+                            <p className="text-sm text-slate-600 leading-relaxed">{mr.human_readable_explanation}</p>
                         </div>
                     )}
 
-                    <p className="text-xs text-slate-400 font-mono">Tender ID: {result.tender_id}</p>
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                Hard Filters Check
+                         </p>
+                         <ul className="text-xs text-slate-600 space-y-2">
+                             {mr.hard_filter_results.filters.map((f: any) => (
+                                 <li key={f.filter_id} className="flex gap-2">
+                                     <span className={f.result === 'PASS' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                                         [{f.result}]
+                                     </span>
+                                     <span>{f.detail}</span>
+                                 </li>
+                             ))}
+                         </ul>
+                    </div>
                 </div>
             )}
         </div>
     );
 }
 
-
 // ─── Main page ─────────────────────────────────────────────────────────────
 
 export const AIMatching = () => {
     const [vendorId, setVendorId]   = useState('');
-    const [k, setK]                 = useState(10);
-    const [explain, setExplain]     = useState(false);
     const [loading, setLoading]     = useState(false);
-    const [results, setResults]     = useState<MatchResult[]>([]);
+    const [results, setResults]     = useState<any[]>([]);
     const [error, setError]         = useState('');
     const [ran, setRan]             = useState(false);
-    const [status, setStatus]       = useState<IndexStatus | null>(null);
-    const [statusLoading, setStatusLoading] = useState(false);
-    const [myVendors, setMyVendors] = useState<UploadedDocument[]>([]);
+    
+    const [myVendors, setMyVendors] = useState<VendorProfileResponse[]>([]);
     const [vendorsLoading, setVendorsLoading] = useState(true);
-
-    const fetchStatus = async () => {
-        setStatusLoading(true);
-        try { setStatus(await getIndexStatus()); } catch { /* ignore */ }
-        setStatusLoading(false);
-    };
 
     useEffect(() => {
         const init = async () => {
-            fetchStatus();
             try {
-                const docs = await getMyDocuments('vendor');
-                setMyVendors(docs);
-                if (docs.length > 0) {
-                    setVendorId(docs[0].id);
+                const profiles = await vendorProfileService.list();
+                setMyVendors(profiles);
+                if (profiles.length > 0) {
+                    setVendorId(profiles[0].id);
                 }
             } catch (err) {
-                console.error("Failed to fetch vendors", err);
+                console.error("Failed to fetch vendor profiles", err);
             } finally {
                 setVendorsLoading(false);
             }
@@ -211,14 +205,14 @@ export const AIMatching = () => {
     }, []);
 
     const run = async () => {
-        if (!vendorId.trim() || vendorId.length !== 24) {
-            setError('Please enter a valid 24-character MongoDB vendor ID.');
+        if (!vendorId.trim()) {
+            setError('Please select a valid Vendor Profile.');
             return;
         }
         setLoading(true); setError(''); setRan(false); setResults([]);
         try {
-            const resp = await matchVendor(vendorId.trim(), k, explain);
-            setResults(resp.results);
+            const { data } = await api.post(`/match/structured/run/${vendorId}`);
+            setResults(data.results || []);
             setRan(true);
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Matching failed';
@@ -231,50 +225,30 @@ export const AIMatching = () => {
         <div style={{ fontFamily: 'DM Sans' }}>
             {/* Header */}
             <div className="mb-8">
-                <span className="pm-badge mb-3">FAISS + Sentence Transformers</span>
+                <span className="pm-badge mb-3">Structured Match + AI</span>
                 <h1 className="text-4xl font-bold text-[#162f3e] mt-3 mb-2" style={{ fontFamily: 'Poppins' }}>
-                    AI <span className="text-[#c41230]">Matching</span> Engine
+                    Tender <span className="text-[#c41230]">Matching</span> Engine
                 </h1>
                 <p className="text-[#475569]">
-                    Semantic document similarity + keyword embedding matching. Scores scaled 0–100.
+                    Strict eligibility filtering followed by field-wise weighted scoring and semantic requirement understanding.
                 </p>
-            </div>
-
-            {/* Index status bar */}
-            <div className="pm-card mb-8 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-6 flex-wrap">
-                    <Stat label="FAISS Vectors" value={status?.faiss_index_size ?? '—'} />
-                    <Stat label="Total Docs" value={status?.total_documents ?? '—'} />
-                    <Stat label="Vendors" value={status?.total_vendors ?? '—'} color="#162f3e" />
-                    <Stat label="Tenders" value={status?.total_tenders ?? '—'} color="#c41230" />
-                </div>
-                <button
-                    onClick={fetchStatus}
-                    disabled={statusLoading}
-                    className="pm-btn-secondary text-sm flex items-center gap-2"
-                >
-                    {statusLoading
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <TrendingUp className="w-3 h-3" />}
-                    Refresh Status
-                </button>
             </div>
 
             {/* Query form */}
             <div className="pm-card mb-8">
                 <h2 className="text-base font-bold text-[#162f3e] mb-5" style={{ fontFamily: 'Poppins' }}>
-                    Configure Match Query
+                    Evaluate Vendor
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <div className="md:col-span-2">
+                <div className="grid grid-cols-1 gap-5">
+                    <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                             Select Vendor Profile *
                         </label>
                         <div className="relative">
-                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
                             {vendorsLoading ? (
                                 <div className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 flex items-center gap-2 text-slate-500">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> Loading your profiles...
+                                    <Loader2 className="w-4 h-4 animate-spin" /> Fetching your profiles...
                                 </div>
                             ) : myVendors.length > 0 ? (
                                 <>
@@ -285,7 +259,7 @@ export const AIMatching = () => {
                                     >
                                         {myVendors.map(v => (
                                             <option key={v.id} value={v.id}>
-                                                {v.original_filename} ({v.id.slice(-6)})
+                                                {v.identity.company_legal_name} ({v.vendor_id || v.id.slice(-6)}) - {v.profile_completeness_pct}% Complete
                                             </option>
                                         ))}
                                     </select>
@@ -293,48 +267,13 @@ export const AIMatching = () => {
                                 </>
                             ) : (
                                 <div className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 text-slate-500">
-                                    No vendor profiles found. Upload one first.
+                                    No vendor profiles found. Create one first!
                                 </div>
                             )}
                         </div>
                         <p className="text-xs text-slate-400 mt-1.5">
-                            Showing documents uploaded by your account.
+                            Matching will evaluate the vendor against all available tenders in the database simultaneously.
                         </p>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                            Top K Results
-                        </label>
-                        <select
-                            value={k}
-                            onChange={e => setK(Number(e.target.value))}
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm
-                                       focus:outline-none focus:border-[#c41230] transition bg-white"
-                        >
-                            {[3, 5, 10, 20, 50].map(n => (
-                                <option key={n} value={n}>Top {n}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Explain toggle */}
-                <div className="flex items-center gap-3 mt-5 pt-5 border-t border-slate-100">
-                    <button
-                        onClick={() => setExplain(v => !v)}
-                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${explain ? 'bg-[#c41230]' : 'bg-slate-200'}`}
-                        role="switch"
-                        aria-checked={explain}
-                    >
-                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${explain ? 'translate-x-5' : ''}`} />
-                    </button>
-                    <div>
-                        <p className="text-sm font-medium text-[#162f3e]">
-                            <Sparkles className="w-4 h-4 inline mr-1 text-[#c41230]" />
-                            Groq AI Explanation
-                        </p>
-                        <p className="text-xs text-slate-400">Adds ~5 seconds. Explains why each match is high or low.</p>
                     </div>
                 </div>
 
@@ -347,12 +286,12 @@ export const AIMatching = () => {
 
                 <button
                     onClick={run}
-                    disabled={loading || !vendorId.trim()}
+                    disabled={loading || !vendorId.trim() || myVendors.length === 0}
                     className="pm-btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Finding Matches…</>
-                        : <><Search className="w-4 h-4" /> Find Matching Tenders</>}
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Evaluating DB Tenders...</>
+                        : <><Search className="w-4 h-4" /> Run Structured Matching</>}
                 </button>
             </div>
 
@@ -362,8 +301,8 @@ export const AIMatching = () => {
                     <div className="flex items-center justify-between mb-5">
                         <h2 className="text-xl font-bold text-[#162f3e]" style={{ fontFamily: 'Poppins' }}>
                             {results.length > 0
-                                ? <>{results.length} Tender{results.length > 1 ? 's' : ''} Found</>
-                                : 'No Matches Found'}
+                                ? <>{results.length} Match Result{results.length > 1 ? 's' : ''} Evaluated</>
+                                : 'No Tenders Evaluated'}
                         </h2>
                         {results.length > 0 && (
                             <p className="text-sm text-slate-500">Sorted by Final Score ↓</p>
@@ -373,15 +312,15 @@ export const AIMatching = () => {
                     {results.length === 0 ? (
                         <div className="pm-card text-center py-16">
                             <Search className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                            <p className="text-[#162f3e] font-semibold mb-2">No tenders indexed yet</p>
+                            <p className="text-[#162f3e] font-semibold mb-2">No tenders in database yet</p>
                             <p className="text-sm text-slate-400">
-                                Go to <strong>Document Upload</strong> and upload at least one tender document first.
+                                Please ingest some mock tenders into the MongoDB instance first.
                             </p>
                         </div>
                     ) : (
                         <div className="space-y-4">
                             {results.map((r, i) => (
-                                <MatchCard key={r.tender_id} result={r} rank={i + 1} />
+                                <MatchCard key={r.match_result._meta.match_id} result={r} rank={i + 1} />
                             ))}
                         </div>
                     )}
@@ -391,9 +330,3 @@ export const AIMatching = () => {
     );
 };
 
-const Stat = ({ label, value, color }: { label: string; value: string | number; color?: string }) => (
-    <div>
-        <p className="text-2xl font-bold" style={{ fontFamily: 'Poppins', color: color ?? '#162f3e' }}>{value}</p>
-        <p className="text-xs text-slate-500">{label}</p>
-    </div>
-);

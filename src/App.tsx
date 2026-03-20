@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Tenders } from './pages/Tenders';
 import { DocumentUpload } from './pages/DocumentUpload';
 import { AIMatching } from './pages/AIMatching';
+import { VendorProfilePage } from './pages/VendorProfile';
 import {
   TenderDetail, Profile, Analytics, Users,
   Organizations, Subscriptions, SupportView
@@ -55,6 +56,12 @@ function App() {
               <Route path="/match" element={
                 <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
                   <AIMatching />
+                </RoleProtectedRoute>
+              } />
+
+              <Route path="/vendor-profile" element={
+                <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
+                  <VendorProfilePage />
                 </RoleProtectedRoute>
               } />
 
