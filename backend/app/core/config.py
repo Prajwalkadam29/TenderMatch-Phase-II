@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     # Redis configuration
     REDIS_URL: str = "redis://localhost:6380/0"
 
+    # SMTP / Email Notifications
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    FROM_EMAIL: str = "no-reply@tendermatch.com"
+
     # File uploads – stored locally for PoC
     UPLOAD_DIR: str = "uploads"
 

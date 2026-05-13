@@ -1,0 +1,30 @@
+.git
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+
+# Node / JS
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+
+# Data
+backend/uploads/
+mongo_data/
+redis_data/
+backend/faiss_index/
+*.pdf
+*.txt

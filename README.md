@@ -55,6 +55,14 @@ The engine inserts the final result into the `match_results` MongoDB collection 
   - `POST /upload/vendor` & `/upload/tender` → 10 uploads per minute (prevents worker-pool resource starvation).
   - `GET /match/{vendor_id}` → 5 matching computations per minute (protects heavy vector matching + Groq LLM explanation runs).
 
+### 6. Automated Tender Ingestion (Web Scraping) 🕸️
+- **Robust Scraping Architecture**: Integrated `BeautifulSoup4` and `httpx` to systematically extract commercial and government tenders from online portals (e.g., TenderTiger).
+- **Celery Beat Schedulers**: Configured CRON-like background processes that wake up hourly to autonomously crawl for new tenders, detect duplicates, and instantly ingest them into MongoDB for immediate matching.
+
+### 7. Asynchronous Email Notification Engine 📧
+- **SMTP Worker Routing**: Offloaded all email notification dispatching to background worker pools using Python's native `smtplib` and `MIMEMultipart`.
+- **Rich HTML Alerts**: Automatically compiles the AI-generated explanation, matching score, and tender details into a premium HTML email template that's dispatched directly to the matching Vendor's inbox.
+
 ---
 
 ## 🛠️ Tech Stack
@@ -64,9 +72,11 @@ The engine inserts the final result into the `match_results` MongoDB collection 
 - FastAPI (REST framework)
 - MongoDB & Motor (Asynchronous NoSQL Storage)
 - FAISS & sentence-transformers (Embeddings & Semantic Match)
-- Celery (Asynchronous background worker orchestration)
+- Celery & Celery Beat (Asynchronous background worker orchestration & cron schedulers)
 - Redis (In-Memory Message Broker, Session Storage & Rate Limiting)
 - PyMuPDF, jose (JWT)
+- BeautifulSoup4 & httpx (Web Scraping)
+- smtplib (Asynchronous Email delivery)
 - Gevent (Local async coroutine worker execution engine)
 
 **Frontend:**
@@ -103,6 +113,13 @@ Navigate to the `backend` folder, configure your environment, and launch FastAPI
    JWT_ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=1440
    GROQ_API_KEY=your_groq_api_key
+   
+   # Email Notification Settings
+   SMTP_SERVER=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your_email@gmail.com
+   SMTP_PASSWORD=your_16_char_app_password
+   FROM_EMAIL=no-reply@tendermatch.com
    ```
 2. Activate environment and run:
    ```powershell
@@ -120,6 +137,10 @@ Open a separate terminal in `backend`, activate your virtual env, and spin up th
 ```powershell
 .\.venv\Scripts\activate
 python -m celery -A app.core.celery_app worker --pool=gevent --concurrency=4 --loglevel=info
+```
+*(Optional)* To start the automated scraper cron jobs, open another terminal and run:
+```powershell
+python -m celery -A app.core.celery_app beat --loglevel=info
 ```
 
 ### Step 4: Ingest Mock Tenders
@@ -141,4 +162,6 @@ npm run dev
 3. Upload PDF documents to test the **Celery-backed extraction worker** under the Upload module. Poll `/api/upload/documents/{doc_id}` to watch its state progress from `processing` to `completed`.
 4. Try spamming the `POST /auth/login` or `POST /upload/vendor` endpoints to test the active **Redis Rate Limiters**.
 5. Test instant token revocation by clicking **Logout**, then attempt to hit any secure endpoint with the blacklisted token.
-6. Navigate to **AI Matching Engine**, select your profile, and hit **Run Structured Matching** to see the scoring and Groq LLM explanations.ntic overrides, and Final Score multipliers!
+6. Trigger the **Automated Web Scraper** instantly via Python shell: `python -c "from app.tasks.scraper_tasks import run_automated_scraper; print(run_automated_scraper())"`
+7. Navigate to the `/docs` Swagger UI and test the `POST /api/notify/test-email` endpoint to watch the background worker instantly dispatch a rich HTML alert to your inbox!
+8. Navigate to **AI Matching Engine**, select your profile, and hit **Run Structured Matching** to see the scoring and Groq LLM explanations.

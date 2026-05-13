@@ -47,6 +47,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api import notify
+
 # ─── Routers ─────────────────────────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(organizations.router)
@@ -55,6 +57,7 @@ app.include_router(upload.router)
 app.include_router(match.router)
 app.include_router(vendor_profiles.router)
 app.include_router(structured_match.router)
+app.include_router(notify.router)
 
 
 @app.get("/", tags=["Health"])
