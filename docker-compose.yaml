@@ -27,8 +27,50 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tendermatch_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=tendermatch
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=supersecretjwtkeyforproductiontendermatch
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tendermatch_celery_worker
+    restart: always
+    command: ["celery", "-A", "app.core.celery_app", "worker", "--pool=solo", "--loglevel=info"]
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=tendermatch
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+
 volumes:
   redis_data:
     driver: local
   mongo_data:
+    driver: local
+  uploads_data:
     driver: local

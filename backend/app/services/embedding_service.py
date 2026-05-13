@@ -110,6 +110,16 @@ class EmbeddingService:
             _executor, self._reconstruct_vector_sync, faiss_id
         )
 
+    async def reconstruct_vectors_batch(self, faiss_ids: list[int]) -> dict[int, np.ndarray]:
+        """
+        Batch reconstruct multiple embeddings in a single ThreadPool execution.
+        Eliminates N+1 thread starvation.
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            _executor, self._reconstruct_vectors_batch_sync, faiss_ids
+        )
+
     @property
     def index_size(self) -> int:
         return self._index.ntotal if self._index else 0
@@ -208,6 +218,18 @@ class EmbeddingService:
         vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
         self._index.reconstruct(int(faiss_id), vec)
         return vec
+
+    def _reconstruct_vectors_batch_sync(self, faiss_ids: list[int]) -> dict[int, np.ndarray]:
+        self._load_model_and_index()
+        results = {}
+        if self._index is None or self._index.ntotal == 0:
+            return results
+        for faiss_id in faiss_ids:
+            if 0 <= faiss_id < self._index.ntotal:
+                vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
+                self._index.reconstruct(int(faiss_id), vec)
+                results[int(faiss_id)] = vec
+        return results
 
     def _persist(self):
         """Write index + mapping to disk."""

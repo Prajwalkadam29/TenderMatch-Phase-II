@@ -34,14 +34,40 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ─── CORS ────────────────────────────────────────────────────────────────────
+# ─── CORS & Logging Middleware ────────────────────────────────────────────────
+from app.core.config import settings
+from app.core.logging_config import setup_logging, request_id_ctx_var
+import time
+import logging
+from uuid import uuid4
+from starlette.requests import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
+setup_logging()
+logger = logging.getLogger("http.access")
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        req_id = request.headers.get("X-Request-ID", uuid4().hex)
+        token = request_id_ctx_var.set(req_id)
+        start_time = time.perf_counter()
+        
+        logger.info(f"Incoming request: {request.method} {request.url.path}")
+        
+        try:
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = req_id
+            process_time = time.perf_counter() - start_time
+            logger.info(f"Completed request: {request.method} {request.url.path} with status {response.status_code} in {process_time:.4f}s")
+            return response
+        finally:
+            request_id_ctx_var.reset(token)
+
+app.add_middleware(LoggingMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",   # Vite default
-        "http://localhost:5174",   # Vite alternate port
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

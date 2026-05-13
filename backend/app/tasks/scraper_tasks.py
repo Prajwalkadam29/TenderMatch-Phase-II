@@ -5,13 +5,17 @@ from datetime import datetime
 
 from app.scrapers.tendertiger_scraper import TenderTigerScraper
 from app.core.database import client, db, settings
+from app.core.celery_db import get_celery_db
 
 logger = logging.getLogger(__name__)
 
-# To run async code inside a synchronous Celery task
+# To run async code inside a synchronous Celery task cleanly
 def run_async(coro):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(coro)
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
 
 @shared_task(name="run_automated_scraper")
 def run_automated_scraper():
@@ -29,44 +33,62 @@ def run_automated_scraper():
         return "No data found."
         
     inserted_count = 0
-    from pymongo import MongoClient
-    
-    # We must use a sync MongoClient inside a Celery worker thread
-    sync_client = MongoClient(settings.MONGODB_URI)
-    sync_db = sync_client[settings.DATABASE_NAME]
+    sync_db = get_celery_db()
 
     for item in scraped_data:
-        # Check if we already scraped this tender to prevent duplicates
-        existing = sync_db.documents.find_one({"metadata.reference_no": item["reference_no"]})
+        ref_no = item["reference_no"]
+        
+        # High-speed Redis check to prevent DB load
+        if not run_async(scraper.is_new_tender(ref_no)):
+            continue
+
+        # Database fallback check
+        existing = sync_db.documents.find_one({"metadata.reference_no": ref_no})
         if existing:
+            run_async(scraper.mark_as_scraped(ref_no))
             continue
             
-        # Create a document schema for the scraped tender
+        # Create a document schema for the scraped tender with normalized structured_data
         doc = {
             "filename": item["title"],
             "type": "tender",
             "search_text": f"{item['title']} {item['description']} {item['location']} {item['organization']}",
+            "structured_data": {
+                "scope": item["description"],
+                "location": item["location"],
+                "organization": item["organization"],
+                "certifications": [], # Scraper can't easily extract this yet
+                "eligibility": "Open to all qualified vendors"
+            },
             "metadata": {
-                "reference_no": item["reference_no"],
+                "reference_no": ref_no,
                 "organization": item["organization"],
                 "location": item["location"],
                 "estimated_value": item["estimated_value"],
                 "source": item["tender_url"]
             },
-            "status": "completed", # For now, we skip raw PDF extraction and assume complete
+            "status": "completed",
             "uploaded_by": "SYSTEM_SCRAPER",
             "created_at": datetime.utcnow()
         }
         
         result = sync_db.documents.insert_one(doc)
+        inserted_id = result.inserted_id
         inserted_count += 1
+        run_async(scraper.mark_as_scraped(ref_no))
         
-        # In a full pipeline, we would now trigger:
-        # 1. FAISS embedding generation for this new document
-        # 2. Automated Matching engine against all vendor profiles
-        # 3. Email notifications for high matches
+        # 1. Trigger FAISS embedding generation for the new scraped document
+        from app.services.embedding_service import get_embedding_service
+        emb_svc = get_embedding_service()
         
-    sync_client.close()
-    
+        # We use the combined search_text for semantic indexing
+        run_async(emb_svc.add_document(
+            mongo_id=str(inserted_id),
+            search_text=doc["search_text"],
+            keywords=[item["organization"], item["location"]] # Use basic metadata as keywords
+        ))
+        
+        logger.info(f"[Scraper] Indexed tender {ref_no} in FAISS.")
+        
     logger.info(f"Automated scraper finished. Inserted {inserted_count} new tenders.")
     return f"Inserted {inserted_count} new tenders."

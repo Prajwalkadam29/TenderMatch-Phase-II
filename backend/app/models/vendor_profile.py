@@ -30,24 +30,24 @@ class PyObjectId(str):
 # ── Identity sub-models ────────────────────────────────────────────────────────
 
 class GSTINEntry(BaseModel):
-    gstin: str
-    state_code: str
-    state_name: str
+    gstin: str = Field(..., pattern=r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")
+    state_code: str = Field(..., max_length=2)
+    state_name: str = Field(..., max_length=100)
     is_primary: bool = False
 
 
 class IdentityBlock(BaseModel):
-    company_legal_name: str
-    registration_type: str
-    year_of_incorporation: int
-    pan_number: str
+    company_legal_name: str = Field(..., max_length=200)
+    registration_type: str = Field(..., max_length=100)
+    year_of_incorporation: int = Field(..., ge=1800, le=2100)
+    pan_number: str = Field(..., pattern=r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$")
     gstin_list: List[GSTINEntry]
-    cin_llpin: Optional[str] = None
-    udyam_registration_number: Optional[str] = None
-    msme_category: Optional[str] = None
-    nsic_registration_number: Optional[str] = None
-    gem_seller_id: Optional[str] = None
-    dpiit_recognition_number: Optional[str] = None
+    cin_llpin: Optional[str] = Field(None, max_length=21)
+    udyam_registration_number: Optional[str] = Field(None, max_length=19)
+    msme_category: Optional[str] = Field(None, max_length=50)
+    nsic_registration_number: Optional[str] = Field(None, max_length=50)
+    gem_seller_id: Optional[str] = Field(None, max_length=50)
+    dpiit_recognition_number: Optional[str] = Field(None, max_length=50)
 
 
 # ── Geography sub-models ───────────────────────────────────────────────────────
@@ -169,13 +169,13 @@ class ComplianceBlock(BaseModel):
 
 class NotificationPreferencesBlock(BaseModel):
     preferred_channels: List[str] = ["email"]
-    email: str
-    whatsapp_number: Optional[str] = None
-    sms_number: Optional[str] = None
-    minimum_match_score_threshold: float = 0.65
-    notification_frequency: Optional[str] = "realtime"
+    email: str = Field(..., max_length=254, pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+    whatsapp_number: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    sms_number: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    minimum_match_score_threshold: float = Field(0.65, ge=0.0, le=1.0)
+    notification_frequency: Optional[str] = Field("realtime", max_length=50)
     excluded_portals: Optional[List[str]] = []
-    min_days_to_deadline: Optional[int] = 7
+    min_days_to_deadline: Optional[int] = Field(7, ge=0)
 
 
 # ── Top-level Vendor Profile document ─────────────────────────────────────────

@@ -11,9 +11,13 @@ async def connect_to_mongo():
     # Existing indexes
     await db.users.create_index("email", unique=True)
     await db.organizations.create_index("name")
-    # New: documents collection index
+    
+    # Documents collection indexes
     await db.documents.create_index("type")
     await db.documents.create_index("created_at")
+    await db.documents.create_index([("type", 1), ("embedding_id", 1)]) # For fast FAISS filtering
+    await db.documents.create_index("metadata.reference_no", unique=True, sparse=True) # Prevent scraper duplicates
+    
     # Vendor profiles indexes
     await db.vendor_profiles.create_index("user_id")
     await db.vendor_profiles.create_index("org_id")

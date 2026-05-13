@@ -24,6 +24,7 @@ Notes:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -82,6 +83,8 @@ async def match_vendor_to_tenders(
 
     try:
         vendor_doc = await db.documents.find_one(vendor_query)
+        # Attempt to fetch the strictly-typed vendor profile for advanced business rules
+        vendor_profile = await db.vendor_profiles.find_one({"vendor_id": vendor_id})
     except Exception:
         return []
 
@@ -112,23 +115,31 @@ async def match_vendor_to_tenders(
     # ── 4–6. Score each tender ────────────────────────────────────────────────
     scored: list[dict] = []
 
+    # Batch reconstruct all tender doc vectors from FAISS to prevent N+1 thread starvation
+    valid_faiss_ids = [t.get("embedding_id") for t in raw_tenders if t.get("embedding_id") is not None]
+    batch_vectors = await emb_svc.reconstruct_vectors_batch(valid_faiss_ids)
+
     for tender_doc in raw_tenders:
+        # 4a. Apply Hard Filters BEFORE expensive math (Certifications + Geography)
+        if not _passes_hard_filters(vendor_doc, tender_doc, vendor_profile):
+            continue
+
         tender_mongo_id = str(tender_doc["_id"])
         faiss_id        = tender_doc.get("embedding_id")
 
-        # Reconstruct tender doc vector from FAISS
-        tender_vec = await emb_svc.reconstruct_vector(faiss_id)
-        if tender_vec is None:
+        if faiss_id is None or faiss_id not in batch_vectors:
             logger.warning("[Match] Could not reconstruct vector for faiss_id=%s", faiss_id)
             continue
+
+        tender_vec = batch_vectors[faiss_id]
 
         # --- Semantic document score (dot product of L2-normalised vecs = cosine) ---
         doc_score = float(np.dot(vendor_vec, tender_vec))
         doc_score = _clamp(doc_score)   # cosine can marginally exceed 1.0 due to float32
 
-        # --- Keyword semantic score ---
+        # --- Keyword semantic score (offloaded to thread to avoid event loop freezing) ---
         tender_kw_embeddings = _load_kw_matrix(tender_doc.get("keyword_embeddings", []))
-        kw_score = _keyword_similarity(vendor_kw_embeddings, tender_kw_embeddings)
+        kw_score = await asyncio.to_thread(_keyword_similarity, vendor_kw_embeddings, tender_kw_embeddings)
 
         # --- Combined final score scaled to 0-100 ---
         raw_final = W_DOC * doc_score + W_KEYWORD * kw_score
@@ -164,6 +175,46 @@ async def match_vendor_to_tenders(
     # Sort by final_score descending, return top_k
     scored.sort(key=lambda x: x["final_score"], reverse=True)
     return scored[:top_k]
+
+
+# ─── Hard Filters ─────────────────────────────────────────────────────────────
+
+def _passes_hard_filters(vendor_doc: dict, tender_doc: dict, vendor_profile: Optional[dict] = None) -> bool:
+    """
+    Ensure the vendor meets mandatory hard filters (certifications & geographic reach).
+    Returns False if the tender requires constraints the vendor lacks.
+    """
+    vendor_sd = vendor_doc.get("structured_data", {})
+    tender_sd = tender_doc.get("structured_data", {})
+    
+    # 1. Certifications Check
+    tender_certs = tender_sd.get("certifications", [])
+    if tender_certs:
+        vendor_certs = vendor_sd.get("certifications", [])
+        vendor_certs_lower = [c.lower() for c in vendor_certs]
+        for req_cert in tender_certs:
+            if not any(req_cert.lower() in v_cert for v_cert in vendor_certs_lower):
+                return False
+                
+    # 2. Location Check (using strict Vendor Profile)
+    tender_loc = tender_sd.get("location", "")
+    if tender_loc and vendor_profile:
+        geography = vendor_profile.get("geography", {})
+        willing_new = geography.get("willing_to_operate_in_new_states", False)
+        
+        # If vendor strictly operates only in specific states
+        if not willing_new:
+            op_states = [s.lower() for s in geography.get("operational_states", [])]
+            t_loc_lower = tender_loc.lower()
+            
+            # Allow generic national tenders
+            if t_loc_lower not in ["india", "national", "any", "multiple", "all india"]:
+                # Disqualify if no operational state matches the tender location
+                match_found = any(state in t_loc_lower or t_loc_lower in state for state in op_states)
+                if not match_found and op_states:
+                    return False
+            
+    return True
 
 
 # ─── Keyword similarity ───────────────────────────────────────────────────────

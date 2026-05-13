@@ -12,6 +12,8 @@ celery_app = Celery(
     include=["app.tasks.document_tasks", "app.tasks.notification_tasks", "app.tasks.scraper_tasks"]
 )
 
+import app.core.celery_db
+
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],

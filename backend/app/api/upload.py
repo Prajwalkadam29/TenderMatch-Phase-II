@@ -21,6 +21,8 @@ import os
 import uuid
 import logging
 from datetime import datetime
+import magic
+from werkzeug.utils import secure_filename
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends
 from typing import List
@@ -68,12 +70,29 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
             detail=f"File too large ({file_size_mb:.1f} MB). Maximum allowed: {MAX_FILE_SIZE_MB} MB."
         )
 
-    filename = file.filename or "unnamed_document"
+    # Sanitize filename to prevent directory traversal
+    filename = secure_filename(file.filename or "unnamed_document")
+    if not filename:
+        filename = "unnamed_document"
+
     ext = os.path.splitext(filename)[-1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"File type '{ext}' not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+
+    # Validate actual MIME type using magic bytes instead of relying on client headers
+    try:
+        detected_mime = magic.from_buffer(file_bytes[:2048], mime=True)
+    except Exception as exc:
+        logger.warning("[Upload] python-magic from_buffer failed (fallback to header): %s", exc)
+        detected_mime = file.content_type
+
+    if detected_mime not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"MIME type '{detected_mime}' not allowed. Allowed: {', '.join(ALLOWED_CONTENT_TYPES)}"
         )
 
     # 3. Save file to disk

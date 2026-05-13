@@ -2,10 +2,10 @@ import os
 import asyncio
 import logging
 from bson import ObjectId
-from pymongo import MongoClient
 from datetime import datetime
 
 from app.core.celery_app import celery_app
+from app.core.celery_db import get_celery_db
 from app.services.pdf_service import extract_text_from_bytes
 from app.services.groq_service import extract_with_groq
 from app.services.embedding_service import get_embedding_service
@@ -14,22 +14,18 @@ from app.models.document import build_search_text
 logger = logging.getLogger(__name__)
 
 def run_async(coro):
-    """Run an async coroutine synchronously inside the Celery worker thread."""
+    """Run an async coroutine synchronously inside the Celery worker thread cleanly."""
     try:
-        loop = asyncio.get_event_loop()
+        return asyncio.run(coro)
     except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
 
 @celery_app.task(name="process_document_task", bind=True)
 def process_document_task(self, doc_id_str: str, file_path: str, doc_type: str):
     logger.info("[Celery] Starting processing of document %s, type: %s", doc_id_str, doc_type)
     
-    mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    db_name = os.getenv("DATABASE_NAME", "tendermatch")
-    client = MongoClient(mongo_uri)
-    db = client[db_name]
+    db = get_celery_db()
     
     try:
         # 1. Read file bytes from local disk
@@ -100,5 +96,3 @@ def process_document_task(self, doc_id_str: str, file_path: str, doc_type: str):
             }}
         )
         raise exc
-    finally:
-        client.close()
