@@ -33,6 +33,8 @@ from app.services.groq_service import extract_with_groq
 from app.services.embedding_service import get_embedding_service
 from app.models.document import build_search_text, document_helper
 from app.schemas.document import DocumentUploadResponse
+from app.tasks.document_tasks import process_document_task
+from fastapi_limiter.depends import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -86,67 +88,22 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
 
     logger.info("[Upload] Saved %s → %s", filename, file_path)
 
-    # 4. Extract text from document
-    try:
-        raw_text = extract_text_from_bytes(file_bytes, filename)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc)
-        )
-
-    logger.info("[Extract] Extracted %d chars from '%s'", len(raw_text), filename)
-
-    # 5. Call Groq LLM
-    try:
-        llm_result = await extract_with_groq(raw_text)
-    except Exception as exc:
-        # Catch ALL Groq SDK exceptions (AuthenticationError, APIStatusError,
-        # network timeouts, etc.) — not just ValueError
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"LLM extraction failed: {type(exc).__name__}: {exc}"
-        )
-
-    structured_data: dict = llm_result.get("structured_data", {})
-    keywords: list = llm_result.get("keywords", [])
-
-    logger.info("[LLM] Extracted %d keywords", len(keywords))
-
-    # 6. Build denormalized search_text
-    search_text = build_search_text(structured_data, keywords)
-
-    # 7. Generate embeddings and add to FAISS index
-    embedding_id: int | None = None
-    keyword_embeddings: list = []
-    try:
-        emb_service = get_embedding_service()
-        emb_result = await emb_service.add_document(
-            mongo_id="pending",        # placeholder — updated after DB insert
-            search_text=search_text,
-            keywords=keywords,
-        )
-        embedding_id = emb_result["embedding_id"]
-        keyword_embeddings = emb_result["keyword_embeddings"]
-        logger.info("[Embedding] Assigned faiss_id=%s", embedding_id)
-    except Exception as exc:
-        # Embedding is non-fatal — document is still stored and usable
-        logger.warning("[Embedding] Failed (non-fatal): %s", exc)
-
-    # 8. Build MongoDB document
+    # 4. Save initial document to MongoDB with status "processing"
     now = datetime.utcnow()
     mongo_doc = {
         "type": doc_type,
         "original_filename": filename,
         "uploaded_by": str(current_user["_id"]),
         "org_id": current_user.get("org_id"),
-        "structured_data": structured_data,
-        "keywords": keywords,
-        "search_text": search_text,
-        "raw_text": raw_text[:50_000],
+        "status": "processing",
+        "task_id": None,
+        "structured_data": {},
+        "keywords": [],
+        "search_text": "",
+        "raw_text": "",
         "file_url": file_path,
-        "embedding_id": embedding_id,
-        "keyword_embeddings": keyword_embeddings,
+        "embedding_id": None,
+        "keyword_embeddings": [],
         "created_at": now,
     }
 
@@ -155,18 +112,28 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
     inserted_id = result.inserted_id
     mongo_doc["_id"] = inserted_id
 
-    # 9. Patch FAISS mapping with the real mongo_id now that we have it
-    if embedding_id is not None:
-        try:
-            emb_service = get_embedding_service()
-            emb_service._mapping[embedding_id] = str(inserted_id)
-            emb_service._persist()
-        except Exception as exc:
-            logger.warning("[Embedding] Mapping patch failed: %s", exc)
+    # 5. Enqueue background Celery task
+    try:
+        task = process_document_task.delay(str(inserted_id), file_path, doc_type)
+        task_id = task.id
+        logger.info("[Celery] Dispatched document processing task %s for doc %s", task_id, inserted_id)
+        
+        # Update task_id in DB
+        await db.documents.update_one(
+            {"_id": inserted_id},
+            {"$set": {"task_id": task_id}}
+        )
+        mongo_doc["task_id"] = task_id
+    except Exception as exc:
+        logger.error("[Celery] Failed to dispatch background task: %s", exc)
+        # Mark as failed in DB
+        await db.documents.update_one(
+            {"_id": inserted_id},
+            {"$set": {"status": "failed", "error_detail": f"Failed to enqueue background processing: {exc}"}}
+        )
+        mongo_doc["status"] = "failed"
 
-    logger.info("[DB] Document inserted with _id=%s", inserted_id)
-
-    # 10. Return serialised response
+    # 6. Return response immediately with "processing" status
     serialised = document_helper(mongo_doc)
     return DocumentUploadResponse(**serialised)
 
@@ -176,6 +143,7 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
 @router.post(
     "/vendor",
     response_model=DocumentUploadResponse,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
     status_code=status.HTTP_201_CREATED,
     summary="Upload a vendor document for AI extraction",
     description=(
@@ -194,6 +162,7 @@ async def upload_vendor_document(
 @router.post(
     "/tender",
     response_model=DocumentUploadResponse,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
     status_code=status.HTTP_201_CREATED,
     summary="Upload a tender document for AI extraction",
     description=(
@@ -224,4 +193,33 @@ async def get_my_documents(
     
     docs = await db.documents.find(query).sort("created_at", -1).to_list(100)
     return [DocumentUploadResponse(**document_helper(doc)) for doc in docs]
+
+
+@router.get(
+    "/documents/{doc_id}",
+    response_model=DocumentUploadResponse,
+    summary="Get status and details of a single uploaded document",
+)
+async def get_document(
+    doc_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    from bson import ObjectId
+    if not ObjectId.is_valid(doc_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid document ID format")
+        
+    db = get_db()
+    doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        
+    # Check tenant access
+    user_id_str = str(current_user["_id"])
+    user_org_id = current_user.get("org_id")
+    
+    if doc.get("uploaded_by") != user_id_str and doc.get("org_id") != user_org_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this document")
+        
+    return DocumentUploadResponse(**document_helper(doc))
+
 

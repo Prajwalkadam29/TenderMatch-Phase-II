@@ -7,13 +7,23 @@ from app.api import auth, organizations, users, upload, match, vendor_profiles, 
 from app.services.embedding_service import get_embedding_service
 
 
+from fastapi_limiter import FastAPILimiter
+from app.core.redis_client import init_redis, close_redis, get_redis
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown lifecycle."""
     await connect_to_mongo()
+    await init_redis()
+    
+    # Initialize rate limiter using Redis
+    redis = get_redis()
+    await FastAPILimiter.init(redis)
+    
     # Pre-load embedding model + restore FAISS index from disk
     await get_embedding_service().warmup()
     yield
+    await close_redis()
     await close_mongo_connection()
 
 

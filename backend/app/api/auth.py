@@ -85,7 +85,9 @@ async def register(payload: RegisterRequest):
     return TokenResponse(access_token=token, user=user_data)
 
 
-@router.post("/login", response_model=TokenResponse)
+from fastapi_limiter.depends import RateLimiter
+
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def login(payload: LoginRequest):
     """Login with email and password, receive JWT token."""
     db = get_db()
@@ -126,3 +128,31 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         org_id=current_user.get("org_id"),
         preferences=current_user.get("preferences", {}),
     )
+
+
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.core.redis_client import get_redis
+from app.core.config import settings
+
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    current_user: dict = Depends(get_current_user)
+):
+    """Log out a user by invalidating their JWT token via Redis blacklist."""
+    token = credentials.credentials
+    redis = get_redis()
+    
+    if redis:
+        # Calculate expiration time matching remaining token life
+        # For simplicity we just use the max TTL from config
+        expire_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        
+        await redis.setex(
+            f"blacklist:{token}",
+            expire_seconds,
+            "true"
+        )
+        
+    return {"status": "ok", "message": "Successfully logged out"}
+

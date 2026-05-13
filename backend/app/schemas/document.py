@@ -20,17 +20,19 @@ class StructuredDataResponse(BaseModel):
 
 
 class DocumentUploadResponse(BaseModel):
-    """Response returned after a successful upload + extraction + embedding."""
+    """Response returned after an upload. Tracks asynchronous parsing status."""
     id: str
     type: str
     original_filename: str
     uploaded_by: Optional[str] = None
     org_id: Optional[str] = None
-    structured_data: StructuredDataResponse
-    keywords: list[str]
-    search_text: str
+    status: str = "processing"   # processing, completed, failed
+    task_id: Optional[str] = None
+    structured_data: Optional[StructuredDataResponse] = None
+    keywords: list[str] = []
+    search_text: str = ""
     file_url: Optional[str]
-    embedding_id: Optional[int] = None    # FAISS index id; None if embedding failed
+    embedding_id: Optional[int] = None    # FAISS index id; None if embedding failed/pending
     created_at: str
 
     class Config:

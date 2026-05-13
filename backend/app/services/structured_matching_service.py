@@ -90,9 +90,9 @@ async def evaluate_match(vendor_id: str, tender: dict) -> dict:
         })
 
     # HF-02: Domain Match
-    tender_domain = tender.get("domain", "")
+    tender_domain = tender.get("domain") # None means unrestricted
     vendor_primary_domains = business.get("primary_domains", [])
-    if tender_domain and tender_domain not in vendor_primary_domains:
+    if tender_domain is not None and tender_domain not in vendor_primary_domains:
         result["hard_filter_results"]["filters"].append({
             "filter_id": "HF-02",
             "filter_name": "Primary Domain Match",
@@ -230,7 +230,7 @@ async def evaluate_match(vendor_id: str, tender: dict) -> dict:
     cert_score = 1.0 if not required_certs else (len(required_certs.intersection(vendor_all_certs)) / len(required_certs))
 
     # 6. Semantic Match (0.15)
-    sem_score = 0.8 # Temporary fallback
+    sem_score = 0.0
     embedding_svc = get_embedding_service()
     tender_scope = tender.get("scope", tender.get("similar_work_definition", ""))
     vendor_capabilities = business.get("capability_description_freetext", "")

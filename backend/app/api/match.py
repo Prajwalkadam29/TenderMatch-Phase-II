@@ -83,9 +83,12 @@ async def get_match_status(current_user: dict = Depends(get_current_user)):
     )
 
 
+from fastapi_limiter.depends import RateLimiter
+
 @router.get(
     "/{vendor_id}",
     response_model=MatchResponse,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
     summary="Match a vendor to top-K tenders",
     description=(
         "Given a vendor document's MongoDB ID, computes semantic similarity "

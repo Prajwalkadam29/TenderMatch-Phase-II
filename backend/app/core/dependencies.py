@@ -8,6 +8,8 @@ from bson import ObjectId
 bearer_scheme = HTTPBearer()
 
 
+from .redis_client import get_redis
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
@@ -17,8 +19,20 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token = credentials.credentials
+    
+    # 1. Check if token is blacklisted in Redis
+    redis = get_redis()
+    if redis:
+        is_blacklisted = await redis.get(f"blacklist:{token}")
+        if is_blacklisted:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked or logged out",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     try:
-        token = credentials.credentials
         payload = decode_token(token)
         user_id: str = payload.get("sub")
         if user_id is None:

@@ -45,6 +45,9 @@ class DocumentInDB(BaseModel):
     keywords: list[str] = []
     search_text: str = ""              # concatenated for embedding / search
 
+    status: str = "processing"         # "processing" | "completed" | "failed"
+    task_id: Optional[str] = None
+
     raw_text: Optional[str] = None    # full extracted text (truncated at 50k chars)
     file_url: Optional[str] = None    # local path or future cloud URL
 
@@ -65,6 +68,8 @@ def document_helper(doc: dict) -> dict:
         "original_filename": doc.get("original_filename", ""),
         "uploaded_by": doc.get("uploaded_by"),
         "org_id": doc.get("org_id"),
+        "status": doc.get("status", "processing"),
+        "task_id": doc.get("task_id"),
         "structured_data": doc.get("structured_data", {}),
         "keywords": doc.get("keywords", []),
         "search_text": doc.get("search_text", ""),

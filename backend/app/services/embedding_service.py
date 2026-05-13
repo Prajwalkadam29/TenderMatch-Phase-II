@@ -114,6 +114,11 @@ class EmbeddingService:
     def index_size(self) -> int:
         return self._index.ntotal if self._index else 0
 
+    async def update_mapping(self, faiss_id: int, mongo_id: str):
+        """Update the mapping thread-safely after an actual document insert."""
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(_executor, self._update_mapping_sync, faiss_id, mongo_id)
+
     # ── Internal sync methods (all run inside _executor) ─────────────────────
 
     def _load_model_and_index(self):
@@ -210,6 +215,11 @@ class EmbeddingService:
         faiss.write_index(self._index, INDEX_FILE)
         with open(MAPPING_FILE, "w") as f:
             json.dump(self._mapping, f)
+
+    def _update_mapping_sync(self, faiss_id: int, mongo_id: str):
+        with self._lock:
+            self._mapping[faiss_id] = mongo_id
+            self._persist()
 
 
 # ─── Module-level singleton ───────────────────────────────────────────────────

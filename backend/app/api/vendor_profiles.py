@@ -12,6 +12,7 @@ POST   /vendor-profiles/validate/phase/{phase} — validate a single phase paylo
 from __future__ import annotations
 
 import math
+import uuid
 from datetime import datetime
 from typing import List, Optional
 from bson import ObjectId
@@ -114,8 +115,7 @@ async def create_vendor_profile(
     completeness = _compute_completeness(data)
 
     # Sequence-based vendor_id
-    count = await db.vendor_profiles.count_documents({})
-    vendor_id = _gen_vendor_id(count + 1)
+    vendor_id = f"V-{uuid.uuid4().hex[:8].upper()}"
 
     doc = {
         **data,

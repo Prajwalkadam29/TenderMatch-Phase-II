@@ -44,6 +44,17 @@ The raw weighted score is multiplied by the Vendor Profile's completeness percen
 #### Step 4: Explainable Output Wrapper
 The engine inserts the final result into the `match_results` MongoDB collection using a highly explicit JSON Schema wrapper detailing the granular scores, the hard-filter rationale, and a human-readable AI-Style explanation paragraph. 
 
+### 4. Asynchronous Task Queue & Document Ingestion Pipeline ⚙️
+- **Celery & Redis Integration**: Offloads resource-heavy, blocking extraction tasks (PDF text extraction, Groq LLM parsing, and FAISS vector index updates) from the main request thread to asynchronous background worker processes.
+- **Task Status Tracking**: Real-time status endpoints (`GET /documents/{doc_id}`) tracking the async state (`processing`, `completed`, `failed`) and returning the updated document schema.
+
+### 5. Production-Grade API Security & Gatekeeping 🔒
+- **Stateful JWT Blacklisting (`/auth/logout`)**: Implements instant session revocation. Logged-out JWTs are stored in Redis with their respective TTL, instantly blocking subsequent API calls in the authentication dependency middleware.
+- **Redis-Backed Rate Limiting**: Leverages `fastapi-limiter` to protect high-impact endpoints from abuse, including:
+  - `POST /auth/login` → 5 requests per minute (stops brute-forcing).
+  - `POST /upload/vendor` & `/upload/tender` → 10 uploads per minute (prevents worker-pool resource starvation).
+  - `GET /match/{vendor_id}` → 5 matching computations per minute (protects heavy vector matching + Groq LLM explanation runs).
+
 ---
 
 ## 🛠️ Tech Stack
@@ -53,12 +64,15 @@ The engine inserts the final result into the `match_results` MongoDB collection 
 - FastAPI (REST framework)
 - MongoDB & Motor (Asynchronous NoSQL Storage)
 - FAISS & sentence-transformers (Embeddings & Semantic Match)
+- Celery (Asynchronous background worker orchestration)
+- Redis (In-Memory Message Broker, Session Storage & Rate Limiting)
 - PyMuPDF, jose (JWT)
+- Gevent (Local async coroutine worker execution engine)
 
 **Frontend:**
 - React (Vite)
 - TypeScript
-- Tailwind CSS (With Glassmorphism UI)
+- Tailwind CSS (With Glassmorphic UI)
 - Lucide Icons
 - Axios
 
@@ -69,39 +83,62 @@ The engine inserts the final result into the `match_results` MongoDB collection 
 ### Prerequisites
 1. **Python 3.10+**
 2. **Node.js**
-3. **MongoDB Server** (Running locally on `mongodb://localhost:27017`)
+3. **Docker Desktop** (To spin up containerized MongoDB & Redis)
 
-### Step 1: Start the Backend server
-Open a terminal and navigate to the `backend` folder:
+### Step 1: Start Containerized Infrastructure
+Run Docker Compose from the root directory to spin up isolated database and broker instances:
 ```powershell
-cd backend
-python -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+docker compose up -d
 ```
-*API docs at: http://localhost:8000/docs*
+*Note: This isolates services from any local Windows installs: MongoDB runs on `localhost:27018` and Redis runs on `localhost:6380`.*
 
-### Step 2: Ingest Mock Tenders
-Open a separate terminal inside `backend` and ingest some mock test data so the database isn't empty!
+### Step 2: Start the Backend server
+Navigate to the `backend` folder, configure your environment, and launch FastAPI:
+1. Create a `backend/.env` file:
+   ```env
+   MONGODB_URI=mongodb://localhost:27018
+   DATABASE_NAME=tendermatch
+   REDIS_URL=redis://localhost:6380/0
+   JWT_SECRET=your_super_secret_key
+   JWT_ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=1440
+   GROQ_API_KEY=your_groq_api_key
+   ```
+2. Activate environment and run:
+   ```powershell
+   cd backend
+   python -m venv .venv
+   .\.venv\Scripts\activate
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   uvicorn app.main:app --reload --port 8000
+   ```
+*API docs are available at: http://localhost:8000/docs*
+
+### Step 3: Run the Celery Asynchronous Worker
+Open a separate terminal in `backend`, activate your virtual env, and spin up the worker pool (optimized for Windows environments via coroutines):
 ```powershell
-# Ensuring you are activating your environment first
-.\venv\Scripts\python.exe backend/scripts/ingest_tenders.py
+.\.venv\Scripts\activate
+python -m celery -A app.core.celery_app worker --pool=gevent --concurrency=4 --loglevel=info
 ```
-*This inserts 10 realistic tenders into `tendermatch.tenders`.*
 
-### Step 3: Start the Frontend Application
-Open a new terminal and navigate to the root folder:
+### Step 4: Ingest Mock Tenders
+Run the bulk ingest script to populate your isolated database:
+```powershell
+.\.venv\Scripts\python.exe scripts/ingest_tenders.py
+```
+
+### Step 5: Start the Frontend Application
+Open a new terminal and navigate to the root directory:
 ```powershell
 npm install
 npm run dev
 ```
 
-### Step 4: End-to-End Walkthrough
+### Step 6: End-to-End Walkthrough
 1. **Register/Login** at `http://localhost:5173`.
-2. Navigate to **Vendor Profile** via the sidebar. 
-3. Carefully fill out all 3 phases of the structured profile Builder (ensure you add a valid Sub Domain using the `+ Add` button). Click **Submit Profile**.
-4. Navigate to **AI Matching Engine**. 
-5. Select your newly created Vendor Profile from the dropdown and hit **Run Structured Matching**.
-6. The UI will hit the new Bulk Evaluator Endpoint, running your profile simultaneously against all 10 MongoDB Tenders.
-7. Observe the incredibly detailed Match Cards highlighting your Disqualification reasons, Strong Matches, Semantic overrides, and Final Score multipliers!
+2. Navigate to **Vendor Profile** and fill out all 3 phases. Hit **Submit Profile**.
+3. Upload PDF documents to test the **Celery-backed extraction worker** under the Upload module. Poll `/api/upload/documents/{doc_id}` to watch its state progress from `processing` to `completed`.
+4. Try spamming the `POST /auth/login` or `POST /upload/vendor` endpoints to test the active **Redis Rate Limiters**.
+5. Test instant token revocation by clicking **Logout**, then attempt to hit any secure endpoint with the blacklisted token.
+6. Navigate to **AI Matching Engine**, select your profile, and hit **Run Structured Matching** to see the scoring and Groq LLM explanations.ntic overrides, and Final Score multipliers!
