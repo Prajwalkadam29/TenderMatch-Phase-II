@@ -1,106 +1,185 @@
-# TenderMatch 🚀 — Production-Grade AI Matching Engine
+# TenderMatch 🚀 — Enterprise AI Procurement Intelligence
 
-TenderMatch is a high-performance, enterprise-ready Vendor–Tender matching ecosystem. Moving beyond simple keyword searches, it leverages **vector embeddings**, **distributed task queues**, and **hard-filter business logic** to deliver mathematically precise and explainable procurement intelligence.
+TenderMatch is a high-performance, production-ready semantic matching engine designed for the procurement industry. It automates the extraction, structuring, and matching of complex tender and vendor documents using state-of-the-art Natural Language Processing (NLP) and vector databases.
 
----
-
-## 🏗️ Technical Architecture & Refinements
-
-### 1. Hardened Document Ingestion Pipeline (Phase 1)
-- **MIME Security**: Implemented binary-level inspection using `python-magic` to thwart MIME-spoofing attacks.
-- **Path Sanitization**: Integrated Werkzeug's `secure_filename()` to prevent path traversal vulnerabilities during multi-tenant file uploads.
-- **Distributed Extraction**: Offloaded PDF parsing and Groq LLM extraction to **Celery workers** using a robust isolated connection pool manager (`celery_db.py`).
-
-### 2. High-Performance Matching Engine (Phase 2 & 3)
-- **FAISS Vector Scaling**: Optimized retrieval using `reconstruct_vectors_batch()` to eliminate N+1 thread starvation during high-concurrency vector lookups.
-- **CPU Offloading**: Offloaded heavy NumPy matrix similarity computations to a dedicated thread pool using `asyncio.to_thread`, keeping the FastAPI event loop unblocked.
-- **Strict Hard Filters**: Implemented deterministic disqualification logic for:
-  - **Certifications**: Mandatory license intersection checks.
-  - **Geography**: Operational state validation with "willingness to expand" logic.
-
-### 3. Enterprise Database & State Management (Phase 4 & 5)
-- **MongoDB Schema Enforcement**: Applied strict BSON `$jsonSchema` validation at the database engine level for `documents` and `vendor_profiles` to ensure data integrity.
-- **Stateless Web Scraping**: Refactored the `TenderTiger` scraper to use **Redis set operations** (`SISMEMBER` / `SADD`) for duplicate tracking, making the scraping pipeline distributed and stateless.
-- **Rate Limiting & CORS**: Secured API surfaces with Redis-backed rate limiting and environment-driven CORS origin matching.
-
-### 4. Distributed Logging & Observability (Phase 7)
-- **Structured JSON Logging**: Replaced standard text logs with machine-readable JSON formatting across the entire stack for seamless ELK/Datadog integration.
-- **Request Tracing**: Implemented `X-Request-ID` correlation middleware that tracks request lifecycles across async tasks and threads using `ContextVars`.
-
-### 5. Production DevOps & Containerization (Phase 7)
-- **Multi-Stage Docker Builds**: Created highly optimized, lean production images using a dual-stage build process:
-  - `builder` stage: Compiles heavy C++ dependencies (FAISS).
-  - `production` stage: Minimal `slim` runner with zero build-tools, running under a non-root `appuser` (UID 1000).
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/Vector_DB-PostgreSQL-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![MongoDB](https://img.shields.io/badge/Document_DB-MongoDB-47A248?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Cache-Redis-DC382D?style=for-the-badge&logo=redis)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Infra-Docker-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 
 ---
 
-## 🛠️ Tech Stack
+## 1. Project Overview
 
-**Backend:**
-- **Core**: FastAPI, Pydantic v2
-- **Data**: MongoDB (Motor), Redis (Session & Tracking)
-- **AI**: FAISS (Vector DB), Sentence-Transformers (`all-MiniLM-L6-v2`), Groq LLM
-- **Task Orchestration**: Celery (Beat & Worker)
-- **Security**: JWT (Jose), Bcrypt, Python-Magic (MIME check)
+### The Problem
+Procurement teams and vendors waste thousands of hours manually reading 50+ page tender PDFs to determine eligibility. Traditional keyword-based search fails to capture nuances in scope, technical requirements, and financial eligibility, leading to missed opportunities and wasted bids.
 
-**Frontend:**
-- **Framework**: React 18 (Vite), TypeScript
-- **Styling**: Vanilla CSS + Tailwind (Glassmorphic Design)
-- **State/Auth**: Axios with 401 Interceptors, Custom AuthContext
+### The Solution
+TenderMatch solves this by transforming unstructured procurement data into actionable intelligence. By combining **LLM-driven document parsing** with **High-Dimensional Vector Matching**, it provides instant, semantic alignment between vendor capabilities and tender requirements.
+
+### Core Users
+- **Vendors**: Manage multiple business profiles and get instant "Go/No-Go" recommendations for live tenders.
+- **Organization Admins**: Oversee team activity, manage sub-users, and track procurement performance.
+- **Tender Analysts**: Upload and vectorize complex tender requirements for automated matching.
 
 ---
 
-## 🖥️ Getting Started
+## 2. Features Implemented So Far
 
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.10+
-- Node.js 18+
+### 🔐 Authentication & Security
+- **Dual-Token Strategy**: Short-lived JWT access tokens + HTTPOnly Refresh Cookies.
+- **RBAC (Role Based Access Control)**: Fine-grained permissions for `USER`, `ADMIN1`, and `SUPERADMIN`.
+- **Session Revocation**: Instant logout via Redis-backed token blacklisting.
+- **Binary MIME Security**: `python-magic` inspection to prevent file-type spoofing.
 
-### 1. Infrastructure Setup
-Spin up the containerized database and broker:
-```bash
-docker compose up -d
-```
-*MongoDB: localhost:27018 | Redis: localhost:6380*
+### 🏢 Vendor Intelligence (Phase II)
+- **Granular Multi-Phase Profiles**: Specialized blocks for Identity, Geography, Business Domain, Financials, Certifications, and Compliance.
+- **Profile Completeness Scoring**: Real-time 80-point data audit with actionable completeness checklists.
+- **Version Tracking**: Automated version increments on profile updates for audit trails.
 
-### 2. Backend Installation
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+### 🎯 AI Matching Engine
+- **Semantic Hybrid Search**: Combines `pgvector` cosine similarity (Sentence Transformers) with hard business logic filters.
+- **Structured Matching**: LLM-driven parsing of tender PDFs into structured requirement JSONs.
+- **Real-time Explanation**: Ask the AI *why* a tender matches a specific vendor profile.
 
-### 3. Worker Execution
-Open a separate terminal to run the document extraction and matching workers:
-```bash
-python -m celery -A app.core.celery_app worker --pool=solo --loglevel=info
-```
+### 📊 Dashboard & Monitoring
+- **Analytics Summary**: Unified view of document counts, profile strength, and top match opportunities.
+- **Organization Activity Feed**: Real-time audit logs of team actions.
+- **Deep Health Checks**: Multi-service connectivity monitoring (Mongo, Redis, Postgres).
 
-### 4. Frontend Installation
-```bash
-npm install
-npm run dev
+---
+
+## 3. Architecture
+
+TenderMatch uses a distributed, microservices-oriented architecture designed for resilience and scale.
+
+```mermaid
+graph TD
+    User((User)) -->|HTTPS| Vite[React Frontend]
+    Vite -->|API Requests| FastAPI[FastAPI Backend]
+    FastAPI -->|Auth/RBAC| Postgres[(PostgreSQL)]
+    FastAPI -->|JSON Metadata| Mongo[(MongoDB)]
+    FastAPI -->|Task Trigger| Redis{Redis Broker}
+    Redis -->|Process Job| Celery[Celery Worker]
+    Celery -->|Vector Search| Postgres
+    Celery -->|Parsing| Groq[Groq LLM]
+    Celery -->|Embeddings| ST[Sentence Transformers]
 ```
 
 ---
 
-## 🧪 Production Verification Suite
+## 4. Tech Stack
 
-1. **Structured Log Audit**:
-   Verify logs are produced in JSON format with correlation IDs:
-   ```json
-   {"timestamp": "...", "level": "INFO", "message": "...", "request_id": "..."}
+- **Frontend**: React 18, Vite, TailwindCSS, Framer Motion, Lucide-Icons.
+- **Backend**: FastAPI, SQLAlchemy (PostgreSQL), Motor (MongoDB).
+- **AI/ML**: `sentence-transformers/all-MiniLM-L6-v2`, `Groq Cloud API`.
+- **Infrastructure**: Docker, Docker Compose, Redis, Celery.
+
+---
+
+## 5. Folder Structure
+
+```
+TenderMatch/
+├── backend/
+│   ├── app/
+│   │   ├── api/          # FastAPI Routers (Auth, Match, Profiles)
+│   │   ├── core/         # Security, DB Engines, Celery Config
+│   │   ├── db/           # SQL Models (Postgres)
+│   │   ├── models/       # Pydantic Schemas (Request/Response)
+│   │   └── services/     # Business Logic (Matching, Scaling)
+│   ├── Dockerfile
+│   └── requirements.txt
+├── src/                  # React Frontend
+│   ├── components/       # Shared UI Components
+│   ├── context/          # Auth & State Contexts
+│   ├── pages/            # View Components (Dashboard, Matching)
+│   └── services/         # API Wrappers
+├── docker-compose.yaml   # Infrastructure Orchestration
+└── API-Documentation.md  # Detailed Endpoint Reference
+```
+
+---
+
+## 6. Setup Instructions
+
+### Local Development (Docker-First)
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Prajwalkadam29/TenderMatch-Phase-II.git
+   cd TenderMatch-Phase-II
    ```
-2. **Rate Limit Test**:
-   Spam the `/auth/login` endpoint to trigger the Redis-backed 429 response.
-3. **MIME Validation Test**:
-   Rename a `.txt` file to `.pdf` and attempt an upload; the server will reject it via magic-byte inspection.
-4. **Scraper Deduplication**:
-   Run `run_automated_scraper()` multiple times; verify Redis prevents redundant MongoDB insertions.
+
+2. **Environment Configuration**
+   Create a `.env` file in the `backend/` directory (see Environment Variables section).
+
+3. **Spin Up Infrastructure**
+   ```bash
+   docker compose up -d --build
+   ```
+   This starts: API (8000), MongoDB (27018), Postgres (5433), Redis (6380), and the Celery Worker.
+
+4. **Launch Frontend**
+   ```bash
+   npm install
+   npm run dev
+   ```
 
 ---
 
-**TenderMatch AI Engine v2.5** · *Built for Production, Scaled for Growth.*
+## 7. Environment Variables (`backend/.env`)
+
+| Variable | Description |
+| :--- | :--- |
+| `DATABASE_URL` | PostgreSQL connection string (asyncpg) |
+| `MONGO_URL` | MongoDB connection string |
+| `REDIS_URL` | Redis connection for Celery & Caching |
+| `JWT_SECRET` | Secret key for signing tokens |
+| `GROQ_API_KEY` | For LLM-based document parsing |
+| `ENVIRONMENT` | `development` or `production` |
+
+---
+
+## 8. Database Design
+
+- **PostgreSQL (`pgvector`)**: Stores relational data (Users, Orgs) and the high-dimensional vector embeddings for tender requirements.
+- **MongoDB**: The primary document store for unstructured tender data and deeply nested Vendor Profiles.
+- **Redis**: Acts as the message broker for Celery and the transient store for JWT blacklisting and rate-limiting.
+
+---
+
+## 9. API Summary
+
+The API is fully documented in [API-Documentation.md](./API-Documentation.md).
+
+Key Modules:
+- `/auth`: Identity management and RBAC.
+- `/vendor-profiles`: Granular capability mapping.
+- `/upload`: AI-driven document ingestion.
+- `/match`: Hybrid semantic search execution.
+- `/activity`: Organizational audit trails and summaries.
+
+---
+
+## 10. Deployment
+
+TenderMatch is built for containerized deployment. For production:
+1. Ensure `ENVIRONMENT=production` to enable secure cookie flags.
+2. Use a persistent volume for the `pg_vector` and `mongodb` data directories.
+3. Configure an Nginx reverse proxy for SSL termination and static file serving.
+
+---
+
+## 11. Roadmap
+
+- [ ] Multi-region tender scraping.
+- [ ] Direct bidding integration via API.
+- [ ] Team collaboration on bid documents.
+- [ ] Exportable RFP-ready vendor dossiers.
+
+---
+
+**TenderMatch Engineering Team** · *Version 4.0.0 (LTS)*

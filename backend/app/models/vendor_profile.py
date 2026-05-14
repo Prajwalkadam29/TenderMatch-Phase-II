@@ -35,6 +35,12 @@ class GSTINEntry(BaseModel):
     state_name: str = Field(..., max_length=100)
     is_primary: bool = False
 
+class CompletenessDetail(BaseModel):
+    field_path: str
+    label: str
+    is_filled: bool
+    section: str  # Identity | Geography | Business | Financials | Certifications | Compliance | Notifications
+
 
 class IdentityBlock(BaseModel):
     company_legal_name: str = Field(..., max_length=200)
@@ -187,6 +193,7 @@ class VendorProfileInDB(BaseModel):
     user_id: str                      # which user created it
     profile_version: int = 1
     profile_completeness_pct: float = 0.0
+    completeness_details: List[CompletenessDetail] = []
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -226,6 +233,7 @@ class VendorProfileResponse(BaseModel):
     user_id: str
     profile_version: int
     profile_completeness_pct: float
+    completeness_details: Optional[List[CompletenessDetail]] = []
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -242,4 +250,7 @@ class VendorProfileResponse(BaseModel):
 def vendor_profile_helper(doc: dict) -> dict:
     """Convert raw MongoDB document to serializable dict."""
     doc["id"] = str(doc.pop("_id"))
+    # Ensure completeness_details exists for legacy profiles
+    if "completeness_details" not in doc:
+        doc["completeness_details"] = []
     return doc

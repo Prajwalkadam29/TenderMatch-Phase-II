@@ -1,5 +1,8 @@
-# Environments
+# Environments — never commit real secrets
 .env
+backend/.env
+*.env.local
+*.env.production
 .venv/
 venv/
 ENV/
@@ -65,3 +68,11 @@ backend/uploads/
 mongo_data/
 redis_data/
 backend/faiss_index/
+backend/faiss_store/
+
+# Test/Example directories
+backend/example1/
+
+# Local uploads (never store user files in git)
+backend/uploads/
+uploads/

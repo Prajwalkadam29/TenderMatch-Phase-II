@@ -10,6 +10,7 @@ class UserOut(BaseModel):
     email: str
     role: str
     org_id: Optional[str] = None
+    preferences: Optional[dict] = None
     is_active: bool = True
     created_at: Optional[str] = None
 

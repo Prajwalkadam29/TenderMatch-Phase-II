@@ -135,6 +135,13 @@ export interface NotificationPreferencesBlock {
   min_days_to_deadline?: number;
 }
 
+export interface CompletenessDetail {
+  field_path: string;
+  label: string;
+  is_filled: boolean;
+  section: string;
+}
+
 export interface VendorProfilePayload {
   identity: IdentityBlock;
   geography: GeographyBlock;
@@ -153,6 +160,7 @@ export interface VendorProfileResponse extends VendorProfilePayload {
   user_id: string;
   profile_version: number;
   profile_completeness_pct: number;
+  completeness_details: CompletenessDetail[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

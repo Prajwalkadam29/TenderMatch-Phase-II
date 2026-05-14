@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Phase1Identity } from '../components/vendorProfile/Phase1Identity';
 import { Phase1Geography } from '../components/vendorProfile/Phase1Geography';
 import { Phase2BusinessDomain, Phase2Financials } from '../components/vendorProfile/Phase2Business';
@@ -161,6 +161,7 @@ function validateNotifications(notif: NotificationPreferencesBlock, comp: Compli
 /* ── Main Page Component ─────────────────────────────────────────────────── */
 export const VendorProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
 
   const [phase, setPhase] = useState(1);
   const [subPhase, setSubPhase] = useState(0);
@@ -174,9 +175,34 @@ export const VendorProfilePage: React.FC = () => {
   const [compliance, setCompliance] = useState<ComplianceBlock>(defaultCompliance);
   const [notifications, setNotifications] = useState<NotificationPreferencesBlock>(defaultNotifications);
 
+  const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState<VendorProfileResponse | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      const fetchProfile = async () => {
+        setFetching(true);
+        try {
+          const data = await vendorProfileService.get(id);
+          setIdentity(data.identity);
+          setGeography(data.geography);
+          setBusiness(data.business_domain);
+          setFinancials(data.financials);
+          setProjects(data.past_project_experience);
+          setCertifications(data.certifications);
+          setCompliance(data.compliance);
+          setNotifications(data.notification_preferences);
+        } catch (err) {
+          setErrors(['Failed to load profile for editing']);
+        } finally {
+          setFetching(false);
+        }
+      };
+      fetchProfile();
+    }
+  }, [id]);
 
   const currentPhaseConfig = PHASES[phase - 1];
   const totalSubPhases = currentPhaseConfig.subPhases.length;
@@ -256,7 +282,13 @@ export const VendorProfilePage: React.FC = () => {
         compliance,
         notification_preferences: notifications,
       };
-      const result = await vendorProfileService.create(payload);
+      
+      let result;
+      if (id) {
+        result = await vendorProfileService.update(id, payload);
+      } else {
+        result = await vendorProfileService.create(payload);
+      }
       setSaved(result);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to save profile. Please try again.';
@@ -314,11 +346,19 @@ export const VendorProfilePage: React.FC = () => {
 
         {/* Page Header */}
         <div className="vpf-page-header">
-          <h1 className="vpf-page-title">Vendor Profile Registration</h1>
+          <h1 className="vpf-page-title">{id ? 'Edit Vendor Profile' : 'Vendor Profile Registration'}</h1>
           <p className="vpf-page-subtitle">
-            Complete your vendor profile in 3 phases to unlock AI-powered tender matching
+            {id ? 'Refine your organization metadata for maximum predictive match accuracy.' : 'Complete your vendor profile in 3 phases to unlock AI-powered tender matching'}
           </p>
         </div>
+
+        {fetching ? (
+          <div className="flex items-center justify-center py-20">
+             <div className="vpf-spinner" />
+             <span className="ml-3 text-slate-500 font-medium">Loading profile data...</span>
+          </div>
+        ) : (
+          <>
 
         {/* Phase Stepper */}
         <div className="vpf-stepper">
@@ -373,21 +413,35 @@ export const VendorProfilePage: React.FC = () => {
               </button>
             )}
           </div>
-          <div className="vpf-nav-right">
+          <div className="vpf-nav-right" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {saving ? (
               <div className="vpf-saving">
                 <div className="vpf-spinner" />
                 Saving profile…
               </div>
             ) : (
-              <button className="vpf-btn-primary" onClick={handleNext} disabled={saving}>
-                {isLastStep ? '🚀 Submit Profile' : 'Next →'}
-              </button>
+              <>
+                {id && !isLastStep && (
+                  <button 
+                    className="vpf-btn-secondary" 
+                    onClick={handleSubmit} 
+                    disabled={saving}
+                    style={{ borderColor: '#c41230', color: '#c41230' }}
+                  >
+                    💾 Save changes
+                  </button>
+                )}
+                <button className="vpf-btn-primary" onClick={handleNext} disabled={saving}>
+                  {isLastStep ? '🚀 Submit Profile' : 'Next →'}
+                </button>
+              </>
             )}
           </div>
         </div>
+        </>
+      )}
 
-      </div>
     </div>
+  </div>
   );
 };

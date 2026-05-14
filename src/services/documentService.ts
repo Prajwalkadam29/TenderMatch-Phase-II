@@ -34,6 +34,16 @@ export async function getMyDocuments(type?: string): Promise<UploadedDocument[]>
     return data;
 }
 
+export async function getAllTenders(): Promise<UploadedDocument[]> {
+    const { data } = await api.get<UploadedDocument[]>('/upload/tenders/all');
+    return data;
+}
+
+export async function getDocument(docId: string): Promise<UploadedDocument> {
+    const { data } = await api.get<UploadedDocument>(`/upload/documents/${docId}`);
+    return data;
+}
+
 // ─── Matching ─────────────────────────────────────────────────────────────────
 
 export async function matchVendor(
@@ -43,6 +53,16 @@ export async function matchVendor(
 ): Promise<MatchResponse> {
     const { data } = await api.get<MatchResponse>(`/match/${vendorId}`, {
         params: { k, explain },
+        timeout: 120_000,
+    });
+    return data;
+}
+
+export async function getMatchDetail(
+    vendorId: string,
+    tenderId: string,
+): Promise<MatchResult> {
+    const { data } = await api.get<MatchResult>(`/match/${vendorId}/${tenderId}`, {
         timeout: 120_000,
     });
     return data;

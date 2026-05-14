@@ -5,8 +5,8 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import hash_password
-from app.core.dependencies import require_role
-from app.schemas.user import UserOut, UserCreate
+from app.core.dependencies import get_current_user, require_role
+from app.schemas.user import UserOut, UserCreate, UserUpdate
 from app.models.user import user_helper
 
 router = APIRouter(prefix="/organization", tags=["User Management"])
@@ -109,3 +109,32 @@ async def delete_org_user(
 
     await db.users.delete_one({"_id": oid})
     return None
+
+
+@router.put("/me", response_model=UserOut)
+async def update_me(
+    payload: UserUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update current user's profile (name, preferences)."""
+    db = get_db()
+    
+    update_data = {}
+    if payload.name is not None:
+        update_data["name"] = payload.name
+    if payload.preferences is not None:
+        # Merge preferences
+        existing_prefs = current_user.get("preferences", {})
+        existing_prefs.update(payload.preferences)
+        update_data["preferences"] = existing_prefs
+    
+    if not update_data:
+        return UserOut(**user_helper(current_user))
+        
+    await db.users.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": update_data}
+    )
+    
+    updated = await db.users.find_one({"_id": current_user["_id"]})
+    return UserOut(**user_helper(updated))

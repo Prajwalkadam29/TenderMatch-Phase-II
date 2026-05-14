@@ -77,18 +77,23 @@ def run_automated_scraper():
         inserted_count += 1
         run_async(scraper.mark_as_scraped(ref_no))
         
-        # 1. Trigger FAISS embedding generation for the new scraped document
+        # 1. Trigger pgvector embedding generation for the new scraped document
         from app.services.embedding_service import get_embedding_service
+        from app.tasks.document_tasks import _save_vector_to_postgres
         emb_svc = get_embedding_service()
         
         # We use the combined search_text for semantic indexing
-        run_async(emb_svc.add_document(
-            mongo_id=str(inserted_id),
-            search_text=doc["search_text"],
-            keywords=[item["organization"], item["location"]] # Use basic metadata as keywords
-        ))
+        doc_vector = emb_svc.encode_text_sync(doc["search_text"])
+        keywords = [item["organization"], item["location"]]
         
-        logger.info(f"[Scraper] Indexed tender {ref_no} in FAISS.")
+        _save_vector_to_postgres(
+            doc_id_str=str(inserted_id),
+            doc_type="tender",
+            vector=doc_vector,
+            keywords=keywords
+        )
+        
+        logger.info(f"[Scraper] Indexed tender {ref_no} natively in PostgreSQL (pgvector).")
         
     logger.info(f"Automated scraper finished. Inserted {inserted_count} new tenders.")
     return f"Inserted {inserted_count} new tenders."

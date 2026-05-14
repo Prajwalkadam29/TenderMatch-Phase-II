@@ -49,20 +49,68 @@ class TenderTigerScraper:
                 
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
-                # MOCK EXTRACTION LOGIC
-                # Real implementation would use soup.find_all('div', class_='tender-card') or similar
-                scraped_tenders = []
-                
-                # Simulating finding tenders on the page
-                for i in range(limit):
-                    scraped_tenders.append({
-                        "title": f"Construction of Solar Power Plant Phase {i+1}",
-                        "reference_no": f"TT-2026-SOLAR-{i+1000}",
+                # ─── MOCK EXTRACTION LOGIC ────────────────────────────────────────────
+                # WARNING: This is a STUB scraper. Replace with real extraction logic
+                # before deploying to production. Real implementation should use:
+                #   soup.find_all('div', class_='tender-card') or equivalent selectors
+                #   against the actual TenderTiger API or search endpoint.
+                #
+                # To prevent data-poisoning from repeated identical inserts, each mock
+                # run generates unique reference numbers using a timestamp prefix.
+                # ─────────────────────────────────────────────────────────────────────
+                import uuid as _uuid
+                from datetime import datetime as _dt
+                run_ts = _dt.utcnow().strftime("%Y%m%d%H%M")   # e.g. "202605131400"
+
+                MOCK_TENDER_TEMPLATES = [
+                    {
+                        "title": "Construction of Solar Power Plant",
                         "organization": "Ministry of New and Renewable Energy",
                         "location": "Gujarat, India",
-                        "estimated_value": 50000000 + (i * 1000000),
+                        "estimated_value_base": 50_000_000,
                         "description": "Design, engineering, supply, construction, erection, testing, and commissioning of Solar PV Power Plant.",
-                        "tender_url": f"{self.base_url}tenders/TT-2026-SOLAR-{i+1000}"
+                    },
+                    {
+                        "title": "National Highway Road Widening Project",
+                        "organization": "National Highways Authority of India",
+                        "location": "Rajasthan, India",
+                        "estimated_value_base": 120_000_000,
+                        "description": "Four-laning of existing two-lane highway including earthwork, pavement, drainage, and structures.",
+                    },
+                    {
+                        "title": "Smart City CCTV Surveillance System",
+                        "organization": "Municipal Corporation",
+                        "location": "Pune, Maharashtra",
+                        "estimated_value_base": 15_000_000,
+                        "description": "Supply, installation, and commissioning of IP-based CCTV surveillance cameras with centralized monitoring.",
+                    },
+                    {
+                        "title": "Drinking Water Supply Pipeline Project",
+                        "organization": "Jal Shakti Ministry",
+                        "location": "Bihar, India",
+                        "estimated_value_base": 75_000_000,
+                        "description": "Design and construction of water distribution network including laying of HDPE pipes and pump stations.",
+                    },
+                    {
+                        "title": "Hospital Medical Equipment Procurement",
+                        "organization": "State Health Department",
+                        "location": "Hyderabad, Telangana",
+                        "estimated_value_base": 8_000_000,
+                        "description": "Supply and installation of diagnostic and surgical medical equipment for district hospitals.",
+                    },
+                ]
+
+                scraped_tenders = []
+                for i, tmpl in enumerate(MOCK_TENDER_TEMPLATES[:limit]):
+                    unique_suffix = _uuid.uuid4().hex[:6].upper()
+                    scraped_tenders.append({
+                        "title": tmpl["title"],
+                        "reference_no": f"TT-{run_ts}-{unique_suffix}",   # unique per run
+                        "organization": tmpl["organization"],
+                        "location": tmpl["location"],
+                        "estimated_value": tmpl["estimated_value_base"] + (i * 1_000_000),
+                        "description": tmpl["description"],
+                        "tender_url": f"{self.base_url}tenders/TT-{run_ts}-{unique_suffix}",
                     })
                 
                 logger.info(f"Successfully scraped {len(scraped_tenders)} tenders from TenderTiger.")

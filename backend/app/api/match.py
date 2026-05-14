@@ -9,7 +9,7 @@ GET /match/status               → index statistics
 
 from fastapi import APIRouter, HTTPException, Query, status, Depends
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from app.services.matching_service import match_vendor_to_tenders
 from app.services.embedding_service import get_embedding_service
@@ -27,14 +27,12 @@ class TenderSummary(BaseModel):
     certifications: list[str]           = []
 
 class MatchResult(BaseModel):
+    eligible:        bool
+    final_score:     float
     tender_id:       str
-    tender_filename: str                = ""
-    semantic_score:  float              # cosine sim of document embeddings [0,1]
-    keyword_score:   float              # avg best-match keyword cosine sim [0,1]
-    final_score:     float              # 0-100, weighted combo
-    tender_summary:  TenderSummary      = TenderSummary()
-    tender_keywords: list[str]          = []
-    explanation:     Optional[str]      = None   # Groq explanation (only if explain=True)
+    tender_filename: Optional[str]      = None
+    match_result:    Dict[str, Any]     # Rich detailed report
+    explanation:     Optional[str]      = None
 
 class MatchResponse(BaseModel):
     vendor_id:    str
@@ -42,7 +40,6 @@ class MatchResponse(BaseModel):
     results:      list[MatchResult]
 
 class StatusResponse(BaseModel):
-    faiss_index_size: int
     total_documents:  int
     total_vendors:    int
     total_tenders:    int
@@ -57,7 +54,7 @@ class StatusResponse(BaseModel):
 )
 async def get_match_status(current_user: dict = Depends(get_current_user)):
     """
-    Returns counts of documents in MongoDB and vectors in FAISS index.
+    Returns counts of documents in MongoDB and vectors in PostgreSQL.
     Useful for verifying uploads went through correctly before matching.
     """
     db      = get_db()
@@ -76,7 +73,6 @@ async def get_match_status(current_user: dict = Depends(get_current_user)):
     total_tenders = await db.documents.count_documents({**tenant_filter, "type": "tender"})
 
     return StatusResponse(
-        faiss_index_size=emb_svc.index_size,
         total_documents=total_docs,
         total_vendors=total_vendors,
         total_tenders=total_tenders,
@@ -92,7 +88,7 @@ from fastapi_limiter.depends import RateLimiter
     summary="Match a vendor to top-K tenders",
     description=(
         "Given a vendor document's MongoDB ID, computes semantic similarity "
-        "against all indexed tenders using FAISS embeddings + keyword matching "
+        "against all indexed tenders using pgvector cosine similarity + keyword matching "
         "and returns ranked results with scores scaled 0–100."
     ),
 )
@@ -105,9 +101,9 @@ async def match_vendor(
     """
     Matching pipeline:
     1. Encode vendor search_text → query vector
-    2. Reconstruct tender vectors from FAISS
-    3. Compute semantic_doc_score + keyword_score
-    4. Combine: final_score = 0.75 * doc + 0.25 * keyword  (×100)
+    2. Query PostgreSQL (pgvector) for top semantic matches
+    3. Apply Hard Filters & Keyword similarity
+    4. Combine scores into final_score (0-100)
     5. Return sorted results
     """
     if len(vendor_id) != 24:
@@ -132,13 +128,11 @@ async def match_vendor(
     # Convert to Pydantic response models
     results = [
         MatchResult(
+            eligible        = m["eligible"],
+            final_score     = m["final_score"],
             tender_id       = m["tender_id"],
             tender_filename = m.get("tender_filename", ""),
-            semantic_score  = m["semantic_score"],
-            keyword_score   = m["keyword_score"],
-            final_score     = m["final_score"],
-            tender_summary  = TenderSummary(**m.get("tender_summary", {})),
-            tender_keywords = m.get("tender_keywords", []),
+            match_result    = m["match_result"],
             explanation     = m.get("explanation"),
         )
         for m in matches
@@ -148,4 +142,70 @@ async def match_vendor(
         vendor_id=vendor_id,
         total_matches=len(results),
         results=results,
+    )
+
+
+@router.get(
+    "/{vendor_id}/{tender_id}",
+    response_model=MatchResult,
+    summary="Get detailed match analysis for a specific pair",
+)
+async def get_detailed_match(
+    vendor_id: str,
+    tender_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Evaluates a specific vendor against a specific tender.
+    Returns the full MatchResult including breakdown and eligibility.
+    """
+    from bson import ObjectId
+    from app.services.matching_service import _fetch_vendor_context, _evaluate_unified_score, _load_kw_matrix, _query_semantic_candidates, _generate_explanation
+    
+    db = get_db()
+    
+    # 1. Fetch Context
+    vendor_doc, vendor_profile = await _fetch_vendor_context(vendor_id, db, current_user)
+    if not vendor_doc:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+        
+    tender_doc = await db.documents.find_one({"_id": ObjectId(tender_id), "type": "tender"})
+    if not tender_doc:
+        raise HTTPException(status_code=404, detail="Tender not found")
+
+    # 2. Get Semantic Score (specific for this pair)
+    # We could re-encode or fetch from a cache, but for now we'll re-calculate or assume 0 if not indexed.
+    # Actually, let's just do a quick semantic check.
+    emb_svc = get_embedding_service()
+    vendor_vec = await emb_svc.encode_text(vendor_doc.get("search_text", ""))
+    
+    from sqlalchemy import text
+    from app.core.postgres import get_pg_session
+    sem_score = 0.0
+    async with get_pg_session() as session:
+        vec_str = f"[{','.join(map(str, vendor_vec))}]"
+        query = text("SELECT 1 - (embedding <=> :vec) AS sim FROM tenders WHERE mongo_id = :tid")
+        res = await session.execute(query, {"vec": vec_str, "tid": tender_id})
+        row = res.fetchone()
+        if row:
+            sem_score = float(row.sim)
+
+    # 3. Evaluate
+    vendor_kw_mat = _load_kw_matrix(vendor_doc.get("keyword_embeddings", []))
+    score_data = await _evaluate_unified_score(
+        vendor_doc, vendor_profile, tender_doc,
+        semantic_score=sem_score,
+        vendor_kw_mat=vendor_kw_mat
+    )
+    
+    # 4. Generate Explanation (Mandatory for details page)
+    score_data["explanation"] = await _generate_explanation(vendor_doc, tender_doc, score_data)
+
+    return MatchResult(
+        eligible        = score_data["eligible"],
+        final_score     = score_data["final_score"],
+        tender_id       = tender_id,
+        tender_filename = tender_doc.get("original_filename") or tender_doc.get("filename"),
+        match_result    = score_data["match_result"],
+        explanation     = score_data["explanation"],
     )

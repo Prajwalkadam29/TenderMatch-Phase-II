@@ -38,7 +38,7 @@ def send_match_notification_email(self, vendor_email: str, vendor_name: str, ten
                     <p style="font-style: italic;">{explanation}</p>
                 </div>
                 
-                <p>Log into your <a href="http://localhost:5173" style="color: #2563eb; text-decoration: none; font-weight: bold;">TenderMatch Dashboard</a> to view the full tender details and apply.</p>
+                <p>Log into your <a href="{settings.FRONTEND_URL}" style="color: #2563eb; text-decoration: none; font-weight: bold;">TenderMatch Dashboard</a> to view the full tender details and apply.</p>
                 
                 <p style="font-size: 12px; color: #64748b; margin-top: 30px;">
                     You are receiving this because you subscribed to automated matching alerts.

@@ -1,31 +1,45 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import numpy as np
 from bson import ObjectId
 from app.core.database import get_db
 from app.services.embedding_service import get_embedding_service
 from app.models.vendor_profile import vendor_profile_helper
 
-async def evaluate_match(vendor_id: str, tender: dict) -> dict:
+async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None) -> dict:
     """
     Evaluates how well a given vendor matches a given tender using strict 
     eligibility filtering and semantic field-wise scoring.
     """
     db = get_db()
     
-    # 1. Fetch vendor
-    vendor_doc = await db.vendor_profiles.find_one({"vendor_id": vendor_id})
+    # ── Tenant-isolated vendor fetch ─────────────────────────────────────────
+    # Build a query that enforces org_id isolation when a user context is provided.
+    # This prevents vendors from one organisation being matched in another's context.
+    vendor_query: dict = {}
+    if current_user:
+        org_id = current_user.get("org_id")
+        user_id = str(current_user.get("_id", ""))
+        if org_id:
+            vendor_query["org_id"] = org_id
+        else:
+            vendor_query["user_id"] = user_id
+
+    # Try matching by vendor_id string first, then fallback to ObjectId
+    vendor_doc = await db.vendor_profiles.find_one({"vendor_id": vendor_id, **vendor_query})
     if not vendor_doc:
-        # Fallback to checking _id if the user passed mongo ObjectId
         if ObjectId.is_valid(vendor_id):
-            vendor_doc = await db.vendor_profiles.find_one({"_id": ObjectId(vendor_id)})
-            
+            vendor_doc = await db.vendor_profiles.find_one(
+                {"_id": ObjectId(vendor_id), **vendor_query}
+            )
+        
     if not vendor_doc:
-        raise ValueError(f"Vendor not found with ID {vendor_id}")
+        raise ValueError(f"Vendor not found or access denied for ID: {vendor_id}")
     
     vendor = vendor_doc
 
     # Default values for matching
     match_id = f"MR-{vendor.get('vendor_id', 'V-000')}-{tender.get('tender_id', 'T-000')}"
+    matched_at = datetime.now(timezone.utc).isoformat()
     
     # Setup results output
     result = {
@@ -33,8 +47,8 @@ async def evaluate_match(vendor_id: str, tender: dict) -> dict:
             "match_id": match_id,
             "vendor_id": vendor.get("vendor_id"),
             "tender_id": tender.get("tender_id"),
-            "matched_at": datetime.utcnow().isoformat(),
-            "engine_version": "2.0.0",
+            "matched_at": matched_at,
+            "engine_version": "2.1.0",
             "notification_sent": False,
             "notification_channel": None,
             "vendor_feedback": None
@@ -269,11 +283,16 @@ async def evaluate_match(vendor_id: str, tender: dict) -> dict:
 
     base_score = sum(weights[k] * raw_scores[k] for k in weights)
 
-    # ─── COMPLETENESS BOOST ──────────────────────────────────────────────────
-    
-    completeness = vendor.get("profile_completeness_pct", 50) / 100.0
-    
-    final_score = min(1.0, base_score * completeness)
+    # ─── COMPLETENESS ADDITIVE BOOST ─────────────────────────────────────────
+    # Instead of a multiplicative penalty (which collapses scores for new/partial
+    # profiles), we apply a small additive boost (max +5%) for complete profiles.
+    # A vendor with 50% completeness still gets a fair base_score — they just
+    # don't receive the quality boost that a fully-filled profile earns.
+    completeness_ratio = vendor.get("profile_completeness_pct", 50) / 100.0
+    COMPLETENESS_BOOST_MAX = 0.05   # up to +5 percentage points
+    completeness_boost = completeness_ratio * COMPLETENESS_BOOST_MAX
+
+    final_score = min(1.0, base_score + completeness_boost)
     
     result["weighted_score"]["breakdown"] = {
         k: {

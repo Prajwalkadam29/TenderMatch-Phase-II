@@ -52,25 +52,6 @@ const PlaceholderPage = ({
 
 // ─── Static Placeholder Exports ──────────────────────────────────────────────
 
-export const TenderDetail = () => (
-    <PlaceholderPage
-        title="Tender Detail"
-        subtitle="Detailed tender analysis with AI match score breakdown, eligibility, and evidence pages."
-        badge="Document Intelligence & Analysis"
-        icon={FileSearch}
-        links={[{ label: 'Mark as Interested', href: '/tenders' }]}
-    />
-);
-
-export const Profile = () => (
-    <PlaceholderPage
-        title="Vendor Profile"
-        subtitle="Manage your vendor information, certifications, categories, and geographic preferences."
-        badge="Trusted Foundations for Autonomous AI"
-        icon={Building2}
-    />
-);
-
 export const Analytics = () => (
     <PlaceholderPage
         title="Deep Analytics"

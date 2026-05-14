@@ -11,8 +11,11 @@ import { Tenders } from './pages/Tenders';
 import { DocumentUpload } from './pages/DocumentUpload';
 import { AIMatching } from './pages/AIMatching';
 import { VendorProfilePage } from './pages/VendorProfile';
+import { MyProfiles } from './pages/MyProfiles';
+import { TenderDetail } from './pages/TenderDetail';
+import { UserProfile } from './pages/UserProfile';
 import {
-  TenderDetail, Profile, Analytics, Users,
+  Analytics, Users,
   Organizations, Subscriptions, SupportView
 } from './pages/Placeholders';
 
@@ -32,7 +35,8 @@ function App() {
             <Route element={<Layout />}>
               {/* Common Routes */}
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile" element={<MyProfiles />} />
+              <Route path="/settings" element={<UserProfile />} />
 
               {/* USER / ADMIN1 specific */}
               <Route path="/tenders" element={
@@ -60,6 +64,12 @@ function App() {
               } />
 
               <Route path="/vendor-profile" element={
+                <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
+                  <VendorProfilePage />
+                </RoleProtectedRoute>
+              } />
+
+              <Route path="/vendor-profile/:id/edit" element={
                 <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
                   <VendorProfilePage />
                 </RoleProtectedRoute>

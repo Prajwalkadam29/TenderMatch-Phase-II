@@ -1,28 +1,29 @@
 """
 embedding_service.py
 --------------------
-Manages sentence-transformer embeddings + FAISS index for semantic search.
+Stateless sentence-transformer embeddings for pgvector semantic search.
 
 Design:
   - Singleton pattern (module-level _service instance)
   - Lazy model loading, warm-up at app startup recommended
-  - FAISS IndexFlatIP with L2-normalised vectors → exact cosine similarity
-  - index.faiss + mapping.json persisted to disk on every write (survives restarts)
+  - Generates L2-normalised vectors for exact cosine similarity in pgvector
   - CPU-bound ops run in ThreadPoolExecutor (never blocks asyncio event loop)
-  - threading.Lock protects FAISS writes
 """
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import threading
 from typing import Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-import numpy as np
+try:
+    import numpy as np
+    _NUMPY_AVAILABLE = True
+except ImportError:
+    _NUMPY_AVAILABLE = False
+    np = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,6 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME      = "all-MiniLM-L6-v2"   # 384-dim, fast, great for semantic search
 EMBEDDING_DIM   = 384
-FAISS_STORE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "faiss_store")
-INDEX_FILE      = os.path.join(FAISS_STORE_DIR, "index.faiss")
-MAPPING_FILE    = os.path.join(FAISS_STORE_DIR, "mapping.json")
 
 _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embeddings")
 
@@ -41,213 +39,114 @@ _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embeddings")
 
 class EmbeddingService:
     """
-    Singleton service: SentenceTransformer model + FAISS index.
+    Singleton service: Stateless SentenceTransformer model.
     All public methods are async-safe.
     """
 
     def __init__(self):
         self._model  = None
-        self._index  = None
-        self._mapping: dict[int, str] = {}   # faiss_id → mongo_id
         self._lock   = threading.Lock()
-        os.makedirs(FAISS_STORE_DIR, exist_ok=True)
+        self._ai_available: bool = False
+
+    def _require_ai(self):
+        """Raise a clear error if AI libraries are not installed."""
+        try:
+            import sentence_transformers
+            import torch
+            self._ai_available = True
+        except ImportError:
+            self._ai_available = False
+            raise RuntimeError(
+                "AI engine not available: torch/sentence-transformers are not "
+                "installed. Semantic search is disabled."
+            )
 
     # ── Warm-up ──────────────────────────────────────────────────────────────
 
     async def warmup(self):
-        """Pre-load model + index at app startup to avoid cold-start latency."""
+        """Pre-load model at app startup. Non-fatal if AI libs are missing."""
+        try:
+            from sentence_transformers import SentenceTransformer  # noqa: F401
+        except ImportError:
+            logger.warning(
+                "[Embedding] torch/sentence-transformers not installed. "
+                "Vectors will not be generated. Install AI deps to enable."
+            )
+            self._ai_available = False
+            return
+        self._ai_available = True
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(_executor, self._load_model_and_index)
-        logger.info("[Embedding] Warmed up. Index size: %d", self._index.ntotal)
+        await loop.run_in_executor(_executor, self._load_model)
 
     # ── Public async API ─────────────────────────────────────────────────────
 
-    async def add_document(
-        self,
-        mongo_id: str,
-        search_text: str,
-        keywords: list[str],
-    ) -> dict:
+    async def encode_text(self, text: str) -> list[float]:
         """
-        Encode search_text + keywords, add doc vector to FAISS.
-        Returns { "embedding_id": int, "keyword_embeddings": [[float, ...], ...] }
+        Encode a single string → L2-normalised 384-dim float list.
+        Used to generate vectors for PostgreSQL insertion.
         """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _executor, self._add_document_sync, mongo_id, search_text, keywords
-        )
-
-    async def search(
-        self,
-        query_text: str,
-        k: int = 10,
-        doc_type_filter: Optional[str] = None,
-    ) -> list[dict]:
-        """
-        Semantic search over the full FAISS index.
-        Returns [ {"faiss_id": int, "mongo_id": str, "score": float} ]
-        """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(_executor, self._search_sync, query_text, k)
-
-    async def encode_text(self, text: str) -> np.ndarray:
-        """
-        Encode a single string → normalised (384,) float32 embedding.
-        Used by matching engine to build the vendor query vector.
-        """
+        self._require_ai()
         loop = asyncio.get_event_loop()
         vecs = await loop.run_in_executor(_executor, self._encode, [text])
-        return vecs[0]   # strip batch dim → (384,)
+        return vecs[0].tolist()   # Return as standard Python list
 
-    async def reconstruct_vector(self, faiss_id: int) -> Optional[np.ndarray]:
+    async def encode_texts(self, texts: list[str]) -> list[list[float]]:
         """
-        Pull a stored (384,) embedding out of the flat FAISS index by its id.
-        IndexFlatIP supports reconstruct() natively.
-        Returns None if faiss_id is invalid.
+        Encode a list of strings → L2-normalised vectors.
         """
+        if not texts:
+            return []
+        self._require_ai()
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _executor, self._reconstruct_vector_sync, faiss_id
-        )
+        vecs = await loop.run_in_executor(_executor, self._encode, texts)
+        return vecs.tolist()
 
-    async def reconstruct_vectors_batch(self, faiss_ids: list[int]) -> dict[int, np.ndarray]:
-        """
-        Batch reconstruct multiple embeddings in a single ThreadPool execution.
-        Eliminates N+1 thread starvation.
-        """
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _executor, self._reconstruct_vectors_batch_sync, faiss_ids
-        )
+    # ── Public sync API (For Celery / Background tasks) ───────────────────────
 
-    @property
-    def index_size(self) -> int:
-        return self._index.ntotal if self._index else 0
+    def encode_text_sync(self, text: str) -> list[float]:
+        """Synchronous version for background tasks."""
+        self._require_ai()
+        vecs = self._encode([text])
+        return vecs[0].tolist()
 
-    async def update_mapping(self, faiss_id: int, mongo_id: str):
-        """Update the mapping thread-safely after an actual document insert."""
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(_executor, self._update_mapping_sync, faiss_id, mongo_id)
+    def encode_texts_sync(self, texts: list[str]) -> list[list[float]]:
+        """Synchronous version for background tasks."""
+        if not texts:
+            return []
+        self._require_ai()
+        vecs = self._encode(texts)
+        return vecs.tolist()
 
     # ── Internal sync methods (all run inside _executor) ─────────────────────
 
-    def _load_model_and_index(self):
-        """Load model + FAISS index once; noop if already loaded."""
-        import faiss
+    def _load_model(self):
+        """Load model once; noop if already loaded."""
         from sentence_transformers import SentenceTransformer
 
         if self._model is None:
-            logger.info("[Embedding] Loading model: %s ...", MODEL_NAME)
-            self._model = SentenceTransformer(MODEL_NAME)
-            logger.info("[Embedding] Model loaded.")
-
-        if self._index is None:
-            if os.path.exists(INDEX_FILE) and os.path.exists(MAPPING_FILE):
-                logger.info("[Embedding] Restoring FAISS index from disk...")
-                self._index = faiss.read_index(INDEX_FILE)
-                with open(MAPPING_FILE, "r") as f:
-                    raw = json.load(f)
-                self._mapping = {int(k): v for k, v in raw.items()}
-                logger.info("[Embedding] Index restored. Vectors: %d", self._index.ntotal)
-            else:
-                logger.info("[Embedding] Creating fresh IndexFlatIP ...")
-                self._index = faiss.IndexFlatIP(EMBEDDING_DIM)
-                self._mapping = {}
+            with self._lock:
+                if self._model is None:  # double check
+                    logger.info("[Embedding] Loading model: %s ...", MODEL_NAME)
+                    self._model = SentenceTransformer(MODEL_NAME)
+                    logger.info("[Embedding] Model loaded.")
 
     def _encode(self, texts: list[str]) -> np.ndarray:
         """Encode & L2-normalise → cosine similarity via inner product."""
-        import faiss
-        self._load_model_and_index()
+        self._load_model()
         vecs = self._model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
         vecs = vecs.astype(np.float32)
-        faiss.normalize_L2(vecs)
+        # L2 Normalize natively with NumPy (FAISS removed)
+        norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+        # Avoid division by zero
+        norms[norms == 0] = 1e-10
+        vecs = vecs / norms
         return vecs
-
-    def _add_document_sync(
-        self,
-        mongo_id: str,
-        search_text: str,
-        keywords: list[str],
-    ) -> dict:
-        with self._lock:
-            self._load_model_and_index()
-
-            doc_vec = self._encode([search_text])           # (1, 384)
-
-            kw_embeddings: list[list[float]] = []
-            if keywords:
-                kw_vecs = self._encode(keywords)            # (n, 384)
-                kw_embeddings = kw_vecs.tolist()
-
-            faiss_id: int = self._index.ntotal
-            self._index.add(doc_vec)
-            self._mapping[faiss_id] = mongo_id
-            self._persist()
-
-            logger.info(
-                "[Embedding] Added mongo_id=%s → faiss_id=%d (total=%d)",
-                mongo_id, faiss_id, self._index.ntotal,
-            )
-            return {"embedding_id": faiss_id, "keyword_embeddings": kw_embeddings}
-
-    def _search_sync(self, query_text: str, k: int) -> list[dict]:
-        self._load_model_and_index()
-        if self._index.ntotal == 0:
-            return []
-        query_vec = self._encode([query_text])
-        actual_k  = min(k, self._index.ntotal)
-        scores, indices = self._index.search(query_vec, actual_k)
-        results = []
-        for score, faiss_id in zip(scores[0], indices[0]):
-            if faiss_id == -1:
-                continue
-            mongo_id = self._mapping.get(int(faiss_id))
-            if mongo_id:
-                results.append({
-                    "faiss_id": int(faiss_id),
-                    "mongo_id": mongo_id,
-                    "score":    float(score),
-                })
-        return results
-
-    def _reconstruct_vector_sync(self, faiss_id: int) -> Optional[np.ndarray]:
-        """Return the stored L2-normalised vector for faiss_id from the flat index."""
-        self._load_model_and_index()
-        if self._index is None or faiss_id < 0 or faiss_id >= self._index.ntotal:
-            return None
-        vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
-        self._index.reconstruct(int(faiss_id), vec)
-        return vec
-
-    def _reconstruct_vectors_batch_sync(self, faiss_ids: list[int]) -> dict[int, np.ndarray]:
-        self._load_model_and_index()
-        results = {}
-        if self._index is None or self._index.ntotal == 0:
-            return results
-        for faiss_id in faiss_ids:
-            if 0 <= faiss_id < self._index.ntotal:
-                vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
-                self._index.reconstruct(int(faiss_id), vec)
-                results[int(faiss_id)] = vec
-        return results
-
-    def _persist(self):
-        """Write index + mapping to disk."""
-        import faiss
-        faiss.write_index(self._index, INDEX_FILE)
-        with open(MAPPING_FILE, "w") as f:
-            json.dump(self._mapping, f)
-
-    def _update_mapping_sync(self, faiss_id: int, mongo_id: str):
-        with self._lock:
-            self._mapping[faiss_id] = mongo_id
-            self._persist()
 
 
 # ─── Module-level singleton ───────────────────────────────────────────────────
 
 _service = EmbeddingService()
 
-
 def get_embedding_service() -> EmbeddingService:
     return _service
+

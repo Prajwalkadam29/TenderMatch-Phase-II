@@ -16,4 +16,7 @@ export const vendorProfileService = {
 
   delete: (id: string): Promise<void> =>
     api.delete(`/vendor-profiles/${id}`).then(r => r.data),
+
+  duplicate: (id: string): Promise<VendorProfileResponse> =>
+    api.post(`/vendor-profiles/${id}/duplicate`).then(r => r.data),
 };

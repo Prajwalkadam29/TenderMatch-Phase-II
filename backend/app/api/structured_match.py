@@ -34,7 +34,8 @@ async def run_structured_match(
         raise HTTPException(status_code=400, detail="Missing vendor_id or tender object")
 
     try:
-        match_result = await evaluate_match(vendor_id, tender)
+        # Pass current_user for tenant-isolated vendor lookup
+        match_result = await evaluate_match(vendor_id, tender, current_user=current_user)
         return match_result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -43,35 +44,28 @@ async def run_structured_match(
 
 from app.core.database import get_db
 
+from app.services.matching_service import match_vendor_to_tenders
+
 @router.post("/run/{vendor_id}")
 async def run_batch_structured_match(
     vendor_id: str,
-    db=Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Evaluates a vendor against ALL tenders currently stored in the DB `tenders`.
+    Evaluates a vendor against all available tenders using the 
+    Unified Matching Engine (pgvector + Business Rules).
     """
     try:
-        tenders_cursor = db.tenders.find({})
-        tenders = await tenders_cursor.to_list(length=100)
-        
-        matches = []
-        for tender in tenders:
-            tender["_id"] = str(tender["_id"])
-            res = await evaluate_match(vendor_id, tender)
-            matches.append(res)
-            
-        def get_score(res):
-            try:
-                return float(res["match_result"]["weighted_score"]["final_score"])
-            except Exception:
-                return 0.0
-                
-        matches.sort(key=get_score, reverse=True)
-        return {"results": matches}
-        
+        results = await match_vendor_to_tenders(
+            vendor_id=vendor_id,
+            top_k=50,
+            explain=True,
+            current_user=current_user
+        )
+        return {"results": results}
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

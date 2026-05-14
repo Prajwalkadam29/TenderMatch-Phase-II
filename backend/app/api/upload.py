@@ -215,6 +215,21 @@ async def get_my_documents(
 
 
 @router.get(
+    "/tenders/all",
+    response_model=List[DocumentUploadResponse],
+    summary="Get all completed tenders in the system",
+)
+async def get_all_tenders(
+    current_user: dict = Depends(get_current_user),
+):
+    db = get_db()
+    # Find all tenders that are completed. 
+    # In a real app, you might filter by org or public status.
+    docs = await db.documents.find({"type": "tender", "status": "completed"}).sort("created_at", -1).to_list(100)
+    return [DocumentUploadResponse(**document_helper(doc)) for doc in docs]
+
+
+@router.get(
     "/documents/{doc_id}",
     response_model=DocumentUploadResponse,
     summary="Get status and details of a single uploaded document",
