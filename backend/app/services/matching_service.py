@@ -1,324 +1,351 @@
 """
 matching_service.py
 -------------------
-Unified Matching Engine: Combines semantic search (pgvector) with 
-deep business rule scoring (Structured Matching).
+Refactored AI Matching Engine (v5.0)
 
-Algorithm:
-  1. Fetch vendor document (MongoDB 'documents' collection).
-  2. Fetch full vendor profile (MongoDB 'vendor_profiles' collection).
-  3. Encode vendor search_text → query vector.
-  4. Query PostgreSQL via pgvector (<=> cosine distance) for semantic candidates.
-  5. Fetch candidate documents from MongoDB.
-  6. For each candidate:
-     a. Apply Hard Filters (Blacklist, Domain, Geography, Financial thresholds).
-     b. If passed, compute Hybrid Weighted Score:
-        - Semantic Similarity (pgvector)
-        - Keyword Similarity (embedding matrix)
-        - Financial Capacity (Turnover ratio)
-        - Experience Match (Contract values)
-        - Certification Match
-  7. Return ranked results with detailed breakdown.
+Polyglot Persistence Implementation:
+- Vendor Profile is fetched from PostgreSQL.
+- Tender Metadata & Embeddings are queried from PostgreSQL (pgvector).
+- Full Tender Documents are fetched from MongoDB for detailed scoring.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import numpy as np
 from bson import ObjectId
-from sqlalchemy import text
+from sqlalchemy import text, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.postgres import get_pg_session
+from app.core.postgres import get_pg_session, get_pg_db
 from app.services.embedding_service import get_embedding_service
-from app.services.structured_matching_service import evaluate_match
+from app.db.models.document import Tender, VendorProfile
+from app.db.models.user import User
+from app.db.models.organization import Organization
 
 logger = logging.getLogger(__name__)
 
 # ─── Scoring Configuration ───────────────────────────────────────────────────
 
 WEIGHTS = {
-    "semantic": 0.35,      # High-level requirement understanding
-    "keyword": 0.15,       # Specific technical keyword overlap
-    "financial": 0.20,     # Ability to handle the contract value
-    "experience": 0.20,    # Proven track record
-    "certification": 0.10  # Regulatory / Quality compliance
+    "domain": 0.25,
+    "geography": 0.15,
+    "financial": 0.20,
+    "experience": 0.15,
+    "certification": 0.10,
+    "similarity": 0.10,
+    "confidence": 0.05
 }
 
 SCORE_SCALE = 100.0
 
-
 # ─── Public Entry Point ───────────────────────────────────────────────────────
 
-async def match_vendor_to_tenders(
-    vendor_id: str,
+async def run_matching_engine(
+    vendor_profile_id: str,
     top_k: int = 10,
-    explain: bool = False,
-    current_user: dict = None,
+    explain: bool = True,
+    current_user: User = None,
 ) -> list[dict]:
     """
-    Find top-K tenders for a given vendor using the Unified Matching Engine.
+    Matches a vendor profile (Postgres) against all active tenders (Postgres + Mongo).
     """
-    db = get_db()
+    mongo_db = get_db()
     emb_svc = get_embedding_service()
 
-    # 1. Fetch Vendor Context
-    vendor_doc, vendor_profile = await _fetch_vendor_context(vendor_id, db, current_user)
-    if not vendor_doc:
-        logger.warning(f"[Match] Vendor {vendor_id} not found.")
+    # 1. Fetch Vendor Context from PostgreSQL
+    try:
+        vp_id = uuid.UUID(vendor_profile_id)
+    except ValueError:
+        logger.error(f"[Match] Invalid Vendor Profile ID format: {vendor_profile_id}")
         return []
 
-    # 2. Get Semantic Query Vector
-    vendor_search_text = vendor_doc.get("search_text", "")
-    vendor_vec = await emb_svc.encode_text(vendor_search_text)
-    vendor_kw_embeddings = _load_kw_matrix(vendor_doc.get("keyword_embeddings", []))
+    async with get_pg_session() as session:
+        vendor_profile = await session.scalar(select(VendorProfile).where(VendorProfile.id == vp_id))
+        if not vendor_profile:
+            logger.error(f"[Match] Vendor Profile {vendor_profile_id} not found in Postgres.")
+            return []
 
-    # 3. Retrieve Semantic Candidates from PostgreSQL
-    semantic_scores = await _query_semantic_candidates(vendor_vec)
+    # 2. Get Semantic Query Vector
+    # Use business_name + capability description for embedding
+    profile_data = vendor_profile.profile_data
+    identity = profile_data.get("identity", {})
+    business_domain = profile_data.get("business_domain", {})
+    
+    search_text = f"{identity.get('company_legal_name', '')} {business_domain.get('capability_description_freetext', '')}"
+    vendor_vec = await emb_svc.encode_text(search_text)
+
+    # 3. Retrieve ALL active tenders via pgvector
+    semantic_scores = await _query_all_candidates(vendor_vec)
     if not semantic_scores:
         return []
 
-    # 4. Batch fetch Tender Documents from MongoDB
-    tender_ids = [ObjectId(mid) for mid in semantic_scores.keys()]
-    raw_tenders = await db.documents.find({
-        "_id": {"$in": tender_ids},
-        "type": "tender",
-        "status": "completed"
-    }).to_list(length=500)
-
-    # 5. Deep Evaluation & Scoring
-    scored_results = []
-    for tender_doc in raw_tenders:
-        # Use the logic from structured_matching_service but tailored for search results
-        score_data = await _evaluate_unified_score(
-            vendor_doc, vendor_profile, tender_doc, 
-            semantic_score=semantic_scores.get(str(tender_doc["_id"]), 0.0),
-            vendor_kw_mat=vendor_kw_embeddings
-        )
-
-        if score_data["eligible"]:
-            # Optionally add Groq explanation
-            if explain:
-                score_data["explanation"] = await _generate_explanation(
-                    vendor_doc, tender_doc, score_data
-                )
-            
-            scored_results.append(score_data)
-
-    # 6. Rank and Return
-    scored_results.sort(key=lambda x: x["final_score"], reverse=True)
-    return scored_results[:top_k]
-
-
-# ─── Internal Implementation Helpers ──────────────────────────────────────────
-
-async def _fetch_vendor_context(vendor_id: str, db: Any, current_user: Optional[dict]):
-    """Fetch both the parsed document and the structured profile for a vendor."""
-    tenant_filter = {}
-    if current_user:
-        org_id = current_user.get("org_id")
-        if org_id:
-            tenant_filter["org_id"] = org_id
-        else:
-            tenant_filter["uploaded_by"] = str(current_user["_id"])
-
-    # Document (contains raw text & vectors)
-    doc = await db.documents.find_one({"_id": ObjectId(vendor_id), "type": "vendor", **tenant_filter})
+    tender_ids = [mid for mid in semantic_scores.keys()]
     
-    # Profile (contains financials, certs, locations)
-    # Profile might be linked via vendor_id string or the doc's ID
-    profile = await db.vendor_profiles.find_one({"$or": [
-        {"user_id": str(current_user["_id"]) if current_user else None},
-        {"vendor_id": vendor_id}
-    ]})
+    # 4. Filter by tenancy in MongoDB
+    # org_id is a UUID in Postgres, needs to be string for Mongo if that's how it's stored
+    org_id = str(current_user.org_id) if current_user and current_user.org_id else None
+    
+    tenant_filter = {"$or": [{"is_global": True}]}
+    if org_id:
+        tenant_filter["$or"].append({"org_id": org_id})
+    elif current_user:
+        tenant_filter["$or"].append({"uploaded_by": str(current_user.id)})
 
-    return doc, profile
+    raw_tenders = await mongo_db.documents.find({
+        "mongo_id": {"$in": tender_ids}, # Assuming we store the mongo_id field in the doc itself now
+        "type": "tender",
+        "status": "completed",
+        **tenant_filter
+    }).to_list(length=200)
+
+    # 5. Evaluation Loop
+    results = []
+    for tender_doc in raw_tenders:
+        match_data = await _evaluate_mock_production_score(
+            vendor_profile, 
+            tender_doc, 
+            semantic_score=semantic_scores.get(tender_doc["mongo_id"], 0.0)
+        )
+        results.append(match_data)
+
+    # 6. Sort by score
+    results.sort(key=lambda x: x["final_score"], reverse=True)
+    return results[:top_k]
 
 
-async def _query_semantic_candidates(vendor_vec: list[float]) -> Dict[str, float]:
-    """Search pgvector for the top 500 most similar tenders."""
+# ─── Core Logic ───────────────────────────────────────────────────────────────
+
+async def _evaluate_mock_production_score(
+    vendor: VendorProfile, 
+    tender: dict,
+    semantic_score: float
+) -> dict:
+    """
+    Weighted scoring logic.
+    vendor: VendorProfile ORM object
+    tender: dict from MongoDB
+    """
+    tender_sd = tender.get("structured_data", {})
+    profile_data = vendor.profile_data
+    
+    # --- 1. Deterministic Hard Filters ---
+    reasons = []
+    
+    # HF-1: Sector/Domain Match
+    vendor_sector = profile_data.get("business_domain", {}).get("primary_domains", [])
+    tender_sector = str(tender_sd.get("sector", ""))
+    sector_pass = any(str(s).lower() in tender_sector.lower() for s in vendor_sector) if vendor_sector else True
+    if not sector_pass: 
+        reasons.append(f"Domain Mismatch: Vendor ({vendor_sector}) vs Tender ({tender_sector})")
+    
+    # HF-2: Turnover Requirement
+    min_turnover = tender_sd.get("min_turnover", 0)
+    vendor_turnover = profile_data.get("financials", {}).get("avg_annual_turnover_inr", 0)
+    turnover_pass = vendor_turnover >= min_turnover
+    if not turnover_pass: 
+        reasons.append(f"Financial Ineligibility: Turnover below required {min_turnover:,}")
+
+    # HF-3: Geography
+    tender_loc = str(tender_sd.get("location", "")).lower()
+    geo = profile_data.get("geography", {})
+    op_states = [s.lower() for s in geo.get("operational_states", [])]
+    geo_pass = True
+    if not geo.get("willing_to_operate_in_new_states", False) and op_states:
+        geo_pass = any(s in tender_loc for s in op_states)
+        if not geo_pass: 
+            reasons.append(f"Geography Restriction: Vendor not operating in {tender_loc}")
+
+    # HF-4: Compliance
+    compliance = profile_data.get("compliance", {})
+    comp_pass = not compliance.get("blacklisted_or_debarred", False)
+    if not comp_pass: 
+        reasons.append("Security Risk: Vendor is blacklisted/debarred.")
+
+    is_eligible = len(reasons) == 0
+
+    # --- 2. Weighted Soft Scoring ---
+    
+    # A. Domain Fit (25%)
+    score_domain = 0.9 if sector_pass else 0.3
+    
+    # B. Geography Fit (15%)
+    score_geo = 0.5
+    if geo_pass:
+        score_geo = 1.0 if any(s in tender_loc for s in op_states) else 0.7
+    elif geo.get("willing_to_operate_in_new_states", False):
+        score_geo = 0.6
+    
+    # C. Financial Capacity (20%)
+    score_fin = 0.4
+    if turnover_pass:
+        ratio = vendor_turnover / (min_turnover or 1)
+        score_fin = 1.0 if ratio > 5 else (0.8 if ratio > 2 else 0.6)
+
+    # D. Experience (15%)
+    projects = profile_data.get("past_project_experience", {}).get("projects", [])
+    min_exp = tender_sd.get("min_experience_years", 0)
+    total_exp = len(projects) * 3
+    score_exp = min(1.0, total_exp / (min_exp or 5))
+
+    # E. Certifications (10%)
+    req_certs = tender_sd.get("certifications", [])
+    v_certs_raw = profile_data.get("certifications", {}).get("iso_certifications", [])
+    v_certs = [str(c.get("standard", "")).lower() for c in v_certs_raw if isinstance(c, dict)]
+    v_certs += [str(c).lower() for c in v_certs_raw if isinstance(c, str)]
+    
+    cert_matches = [c for c in req_certs if str(c).lower() in v_certs]
+    score_certs = len(cert_matches) / len(req_certs) if req_certs else 1.0
+
+    # F. Capability Similarity (10%)
+    score_sim = max(0.0, min(1.0, semantic_score))
+
+    # G. Confidence / Completeness (5%)
+    score_conf = vendor.profile_completeness_pct / 100.0
+
+    # Final Weighted Calculation
+    final_raw = (
+        WEIGHTS["domain"] * score_domain +
+        WEIGHTS["geography"] * score_geo +
+        WEIGHTS["financial"] * score_fin +
+        WEIGHTS["experience"] * score_exp +
+        WEIGHTS["certification"] * score_certs +
+        WEIGHTS["similarity"] * score_sim +
+        WEIGHTS["confidence"] * score_conf
+    )
+    
+    if not is_eligible:
+        final_raw *= 0.5
+
+    final_score = round(final_raw * 100, 1)
+
+    # Labels
+    if final_score >= 85: label = "Strongly Recommended"
+    elif final_score >= 70: label = "Recommended"
+    elif final_score >= 50: label = "Partially Suitable"
+    else: label = "Weak Fit / Not Eligible"
+
+    return {
+        "tender_id": str(tender.get("_id")),
+        "mongo_id": tender.get("mongo_id"),
+        "tender_title": tender_sd.get("title", "Untitled Tender"),
+        "sector": tender_sector,
+        "deadline": tender_sd.get("submission_deadline"),
+        "final_score": final_score,
+        "recommendation": label,
+        "is_eligible": is_eligible,
+        "disqualification_reasons": reasons,
+        "score_breakdown": {
+            "domain_fit": round(score_domain * 100, 1),
+            "geography_fit": round(score_geo * 100, 1),
+            "financial_capacity": round(score_fin * 100, 1),
+            "experience_track_record": round(score_exp * 100, 1),
+            "certifications_compliance": round(score_certs * 100, 1),
+            "capability_similarity": round(score_sim * 100, 1),
+            "confidence_score": round(score_conf * 100, 1)
+        },
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async def _query_all_candidates(vendor_vec: list[float]) -> Dict[str, float]:
+    """Search pgvector for ALL similar tenders."""
     results = {}
     async with get_pg_session() as session:
         vec_str = f"[{','.join(map(str, vendor_vec))}]"
         query = text("""
             SELECT mongo_id, 1 - (embedding <=> :vec) AS sim
             FROM tenders
-            WHERE embedding IS NOT NULL
             ORDER BY embedding <=> :vec
-            LIMIT 500
+            LIMIT 200
         """)
         pg_results = await session.execute(query, {"vec": vec_str})
         for row in pg_results:
             results[row.mongo_id] = float(row.sim)
     return results
 
-
-async def _evaluate_unified_score(
-    vendor_doc: dict, 
-    vendor_profile: Optional[dict], 
-    tender_doc: dict,
-    semantic_score: float,
-    vendor_kw_mat: Optional[np.ndarray]
-) -> dict:
+async def match_tender_to_all_vendors(
+    tender_mongo_id: str,
+    org_id: str | None = None,
+    threshold: float = 75.0
+) -> int:
     """
-    Applies Phase 4 hybrid scoring and returns a rich, frontend-compatible report.
+    Called after a new tender is processed.
+    Matches it against all active vendor profiles for the target organization.
+    Returns the number of notifications triggered.
     """
-    tender_sd = tender_doc.get("structured_data", {})
-    vendor_sd = vendor_doc.get("structured_data", {})
-    tender_id = str(tender_doc["_id"])
+    from app.tasks.notification_tasks import send_match_notification_email
     
-    # --- 1. Hard Filters (Eligibility) ---
-    filters = []
+    mongo_db = get_db()
     
-    # HF-01: Certifications
-    required_certs = tender_sd.get("certifications", [])
-    if required_certs:
-        vendor_certs = [c.lower() for c in vendor_sd.get("certifications", [])]
-        passed = any(rc.lower() in vendor_certs for rc in required_certs)
-        filters.append({
-            "filter_id": "HF-01",
-            "filter_name": "Mandatory Certifications",
-            "result": "PASS" if passed else "FAIL",
-            "detail": "All certs met." if passed else f"Missing: {required_certs}"
-        })
-    else:
-        filters.append({"filter_id": "HF-01", "filter_name": "Certifications", "result": "PASS", "detail": "None required."})
+    # 1. Fetch Tender from Mongo
+    tender_doc = await mongo_db.documents.find_one({"_id": ObjectId(tender_mongo_id)})
+    if not tender_doc:
+        logger.error(f"[Notify] Tender {tender_mongo_id} not found in Mongo.")
+        return 0
 
-    # HF-02: Location
-    tender_loc = tender_sd.get("location", "")
-    loc_pass = True
-    loc_detail = "Location within reach."
-    if tender_loc and vendor_profile:
-        geography = vendor_profile.get("geography", {})
-        if not geography.get("willing_to_operate_in_new_states", False):
-            op_states = [s.lower() for s in geography.get("operational_states", [])]
-            if not any(s in tender_loc.lower() for s in op_states) and op_states:
-                loc_pass = False
-                loc_detail = f"Tender in {tender_loc}; vendor in {op_states}."
-    filters.append({"filter_id": "HF-02", "filter_name": "Geographic Reach", "result": "PASS" if loc_pass else "FAIL", "detail": loc_detail})
+    # 2. Fetch Tender Vector from Postgres
+    async with get_pg_session() as session:
+        pg_tender = await session.scalar(select(Tender).where(Tender.mongo_id == tender_mongo_id))
+        if not pg_tender or pg_tender.embedding is None:
+            logger.error(f"[Notify] Tender {tender_mongo_id} has no embedding in Postgres.")
+            return 0
+        tender_vec = pg_tender.embedding
 
-    overall_pass = all(f["result"] == "PASS" for f in filters)
-
-    # --- 2. Weighted Scoring (Only if passed filters) ---
-    
-    if not overall_pass:
-        return {
-            "eligible": False,
-            "final_score": 0.0,
-            "match_result": {
-                "_meta": {"tender_id": tender_id, "match_id": f"M-{tender_id[:8]}"},
-                "hard_filter_results": {"overall_pass": False, "disqualification_reason": filters[-1]["detail"], "filters": filters},
-                "weighted_score": {"final_score": 0.0, "breakdown": {}},
-                "recommendation": "DISQUALIFIED",
-                "recommendation_detail": "Failed eligibility checks."
-            }
-        }
-
-    # A. Semantic Score
-    s_score = max(0.0, min(1.0, semantic_score))
-    
-    # B. Keyword Score
-    tender_kw_embeddings = _load_kw_matrix(tender_doc.get("keyword_embeddings", []))
-    kw_score = await asyncio.to_thread(_keyword_similarity, vendor_kw_mat, tender_kw_embeddings)
-    
-    # C. Financial Score
-    fin_score = 0.5
-    if vendor_profile:
-        vendor_turnover = vendor_profile.get("financials", {}).get("avg_annual_turnover_inr", 0)
-        tender_value = tender_doc.get("metadata", {}).get("estimated_value", 0)
-        if tender_value > 0:
-            ratio = vendor_turnover / tender_value
-            fin_score = 1.0 if ratio >= 2 else (0.7 if ratio >= 1 else 0.4)
-
-    # D. Experience Score
-    exp_score = 0.5
-    if vendor_profile:
-        projects = vendor_profile.get("past_project_experience", {}).get("projects", [])
-        exp_score = 1.0 if len(projects) > 2 else (0.7 if len(projects) > 0 else 0.4)
-
-    # E. Cert Match Score
-    cert_score = 1.0
-
-    final_raw = (
-        WEIGHTS["semantic"] * s_score +
-        WEIGHTS["keyword"] * kw_score +
-        WEIGHTS["financial"] * fin_score +
-        WEIGHTS["experience"] * exp_score +
-        WEIGHTS["certification"] * cert_score
-    )
-    
-    final_score = round(final_raw * SCORE_SCALE, 2)
-
-    return {
-        "eligible": True,
-        "final_score": final_score,
-        "tender_id": tender_id,
-        "tender_filename": tender_doc.get("original_filename") or tender_doc.get("filename"),
-        "match_result": {
-            "_meta": {
-                "tender_id": tender_id,
-                "match_id": f"M-{tender_id[:8]}",
-                "tender_filename": tender_doc.get("original_filename") or tender_doc.get("filename")
-            },
-            "hard_filter_results": {"overall_pass": True, "filters": filters},
-            "weighted_score": {
-                "final_score": final_raw,
-                "breakdown": {
-                    "domain_semantic_similarity": {"raw_score": s_score, "weight": WEIGHTS["semantic"]},
-                    "keyword_similarity": {"raw_score": kw_score, "weight": WEIGHTS["keyword"]},
-                    "financial_capacity_ratio": {"raw_score": fin_score, "weight": WEIGHTS["financial"]},
-                    "experience_track_record": {"raw_score": exp_score, "weight": WEIGHTS["experience"]}
-                }
-            },
-            "recommendation": "STRONG_MATCH" if final_score > 80 else "MODERATE_MATCH",
-            "recommendation_detail": f"Score {final_score} - Meets all core requirements.",
-            "tender_summary": {
-                "scope": tender_sd.get("scope"),
-                "location": tender_sd.get("location"),
-                "certifications": required_certs
-            }
-        }
-    }
-
-
-# ─── Shared Utilities ─────────────────────────────────────────────────────────
-
-def _load_kw_matrix(kw_embeddings_raw: list) -> Optional[np.ndarray]:
-    if not kw_embeddings_raw: return None
-    try:
-        mat = np.array(kw_embeddings_raw, dtype=np.float32)
-        return mat if (mat.ndim == 2 and mat.shape[1] == 384) else None
-    except Exception: return None
-
-def _keyword_similarity(vendor_kw_mat: Optional[np.ndarray], tender_kw_mat: Optional[np.ndarray]) -> float:
-    if vendor_kw_mat is None or tender_kw_mat is None: return 0.0
-    sim_matrix = tender_kw_mat @ vendor_kw_mat.T
-    return float(np.clip(sim_matrix.max(axis=1).mean(), 0.0, 1.0))
-
-async def _generate_explanation(vendor_doc: dict, tender_doc: dict, score_data: dict) -> str:
-    """Call Groq LLM to explain the unified score."""
-    try:
-        from groq import AsyncGroq
-        from app.core.config import settings
-        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        
-        prompt = f"""Explain this TenderMatch score of {score_data['final_score']}/100.
-        Vendor Keywords: {vendor_doc.get('keywords', [])}
-        Tender Scope: {score_data['tender_summary']['scope']}
-        Semantic Sim: {score_data['semantic_score']:.2f}
-        Keyword Match: {score_data['keyword_score']:.2f}
-        Provide a 2-sentence summary of the alignment."""
-        
-        res = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.2
+        # 3. Fetch all active VendorProfiles for this Org
+        # We also fetch the associated user to get their email address.
+        stmt = (
+            select(VendorProfile, User)
+            .join(User, VendorProfile.user_id == User.id)
+            .where(
+                VendorProfile.org_id == uuid.UUID(org_id) if org_id else None,
+                VendorProfile.is_active == True
+            )
         )
-        return res.choices[0].message.content.strip()
-    except Exception: return "Alignment based on semantic scope and keyword overlap."
+        profile_results = await session.execute(stmt)
+        active_profiles = profile_results.all()
 
+    # 4. Evaluation Loop
+    notified_count = 0
+    for profile_orm, user_orm in active_profiles:
+        # Calculate semantic score (cosine similarity)
+        # 1 - (A <=> B) in pgvector is cosine similarity
+        # Here we manually compute it using the ORM objects if we had the vectors,
+        # but for simplicity, we use the evaluate function.
+        # Note: profile_orm.embedding is the vector.
+        
+        sim = 0.0
+        if profile_orm.embedding and tender_vec:
+            v_vec = np.array(profile_orm.embedding)
+            t_vec = np.array(tender_vec)
+            sim = float(np.dot(v_vec, t_vec) / (np.linalg.norm(v_vec) * np.linalg.norm(t_vec)))
+
+        match_data = await _evaluate_mock_production_score(
+            profile_orm, 
+            tender_doc, 
+            semantic_score=sim
+        )
+        
+        score = match_data["final_score"]
+        if score >= threshold:
+            logger.info(f"[Notify] High match ({score}%) for {user_orm.email} on {tender_doc.get('original_filename')}")
+            
+            # Trigger asynchronous email task
+            send_match_notification_email.delay(
+                vendor_email=user_orm.email,
+                vendor_name=user_orm.name,
+                tender_title=match_data["tender_title"],
+                match_score=score,
+                explanation=match_data["explanation_text"] if "explanation_text" in match_data else match_data.get("recommendation", "")
+            )
+            notified_count += 1
+            
+    return notified_count

@@ -12,6 +12,7 @@ from app.db.models.organization import Organization  # noqa: F401
 from app.db.models.user import User  # noqa: F401
 from app.db.models.subscription import Subscription  # noqa: F401
 from app.db.models.audit_log import AuditLog  # noqa: F401
+from app.db.models.document import Tender, VendorProfile  # noqa: F401
 
 __all__ = [
     "Base",
@@ -19,4 +20,6 @@ __all__ = [
     "User",
     "Subscription",
     "AuditLog",
+    "Tender",
+    "VendorProfile",
 ]

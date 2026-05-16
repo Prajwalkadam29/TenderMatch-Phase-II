@@ -3,46 +3,35 @@ upload.py
 ---------
 API endpoints for document upload and AI-powered extraction.
 
-POST /upload/vendor  → uploads a vendor profile document
-POST /upload/tender  → uploads a tender document
-
-Pipeline for each:
-  1. Receive uploaded file
-  2. Save to local disk (UPLOAD_DIR)
-  3. Extract text via PyMuPDF
-  4. Send text to Groq LLM → structured JSON + keywords
-  5. Build search_text from extracted fields
-  6. Generate embeddings (sentence-transformers → FAISS)
-  7. Persist document record to MongoDB (with embedding_id)
-  8. Return structured response
+Polyglot Persistence:
+- All upload metadata records are stored in MongoDB (documents collection).
+- Tenders are AUTHORITATIVE in MongoDB (rich text/JSON) + pgvector (embedding).
+- Vendor uploads are processing buckets that eventually update the Postgres VendorProfile.
 """
 
 import os
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import magic
 from werkzeug.utils import secure_filename
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends
 from typing import List
+from bson import ObjectId
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.services.pdf_service import extract_text_from_bytes
-from app.services.groq_service import extract_with_groq
-from app.services.embedding_service import get_embedding_service
-from app.models.document import build_search_text, document_helper
+from app.models.document import document_helper
 from app.schemas.document import DocumentUploadResponse
 from app.tasks.document_tasks import process_document_task
+from app.db.models.user import User
 from fastapi_limiter.depends import RateLimiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["Document Upload"])
-
-# ─── Allowed MIME / extension check ──────────────────────────────────────────
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 ALLOWED_CONTENT_TYPES = {
@@ -51,51 +40,35 @@ ALLOWED_CONTENT_TYPES = {
 }
 MAX_FILE_SIZE_MB = 20
 
-
-# ─── Shared internal pipeline ────────────────────────────────────────────────
-
-async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -> DocumentUploadResponse:
-    """
-    Core pipeline: read → validate → extract text → LLM → store.
-    Returns the serialised document record.
-    """
-    # 1. Read bytes
+async def _process_upload(file: UploadFile, doc_type: str, current_user: User) -> DocumentUploadResponse:
     file_bytes = await file.read()
 
-    # 2. Basic validation
     file_size_mb = len(file_bytes) / (1024 * 1024)
     if file_size_mb > MAX_FILE_SIZE_MB:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large ({file_size_mb:.1f} MB). Maximum allowed: {MAX_FILE_SIZE_MB} MB."
+            detail=f"File too large ({file_size_mb:.1f} MB). Max allowed: {MAX_FILE_SIZE_MB} MB."
         )
 
-    # Sanitize filename to prevent directory traversal
     filename = secure_filename(file.filename or "unnamed_document")
-    if not filename:
-        filename = "unnamed_document"
-
     ext = os.path.splitext(filename)[-1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"File type '{ext}' not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            detail=f"File type '{ext}' not supported."
         )
 
-    # Validate actual MIME type using magic bytes instead of relying on client headers
     try:
         detected_mime = magic.from_buffer(file_bytes[:2048], mime=True)
-    except Exception as exc:
-        logger.warning("[Upload] python-magic from_buffer failed (fallback to header): %s", exc)
+    except Exception:
         detected_mime = file.content_type
 
     if detected_mime not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"MIME type '{detected_mime}' not allowed. Allowed: {', '.join(ALLOWED_CONTENT_TYPES)}"
+            detail=f"MIME type '{detected_mime}' not allowed."
         )
 
-    # 3. Save file to disk
     upload_dir = os.path.join(settings.UPLOAD_DIR, doc_type)
     os.makedirs(upload_dir, exist_ok=True)
 
@@ -105,15 +78,12 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
     with open(file_path, "wb") as f:
         f.write(file_bytes)
 
-    logger.info("[Upload] Saved %s → %s", filename, file_path)
-
-    # 4. Save initial document to MongoDB with status "processing"
-    now = datetime.utcnow()
+    # Save initial record to MongoDB
     mongo_doc = {
         "type": doc_type,
         "original_filename": filename,
-        "uploaded_by": str(current_user["_id"]),
-        "org_id": current_user.get("org_id"),
+        "uploaded_by": str(current_user.id),
+        "org_id": str(current_user.org_id) if current_user.org_id else None,
         "status": "processing",
         "task_id": None,
         "structured_data": {},
@@ -121,139 +91,84 @@ async def _process_upload(file: UploadFile, doc_type: str, current_user: dict) -
         "search_text": "",
         "raw_text": "",
         "file_url": file_path,
-        "embedding_id": None,
-        "keyword_embeddings": [],
-        "created_at": now,
+        "created_at": datetime.now(timezone.utc),
     }
 
     db = get_db()
     result = await db.documents.insert_one(mongo_doc)
     inserted_id = result.inserted_id
-    mongo_doc["_id"] = inserted_id
+    
+    # Update with a generated mongo_id string to stay consistent across DBs
+    await db.documents.update_one(
+        {"_id": inserted_id},
+        {"$set": {"mongo_id": str(inserted_id)}}
+    )
 
-    # 5. Enqueue background Celery task
     try:
         task = process_document_task.delay(str(inserted_id), file_path, doc_type)
-        task_id = task.id
-        logger.info("[Celery] Dispatched document processing task %s for doc %s", task_id, inserted_id)
-        
-        # Update task_id in DB
         await db.documents.update_one(
             {"_id": inserted_id},
-            {"$set": {"task_id": task_id}}
+            {"$set": {"task_id": task.id}}
         )
-        mongo_doc["task_id"] = task_id
+        mongo_doc["task_id"] = task.id
     except Exception as exc:
-        logger.error("[Celery] Failed to dispatch background task: %s", exc)
-        # Mark as failed in DB
+        logger.error("[Celery] Dispatch failed: %s", exc)
         await db.documents.update_one(
             {"_id": inserted_id},
-            {"$set": {"status": "failed", "error_detail": f"Failed to enqueue background processing: {exc}"}}
+            {"$set": {"status": "failed", "error_detail": str(exc)}}
         )
         mongo_doc["status"] = "failed"
 
-    # 6. Return response immediately with "processing" status
-    serialised = document_helper(mongo_doc)
-    return DocumentUploadResponse(**serialised)
+    mongo_doc["_id"] = inserted_id
+    return DocumentUploadResponse(**document_helper(mongo_doc))
 
-
-# ─── Endpoints ────────────────────────────────────────────────────────────────
-
-@router.post(
-    "/vendor",
-    response_model=DocumentUploadResponse,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
-    status_code=status.HTTP_201_CREATED,
-    summary="Upload a vendor document for AI extraction",
-    description=(
-        "Upload a vendor profile or capability document (PDF/TXT). "
-        "The system extracts structured data and semantic keywords using Groq LLM "
-        "and stores the result in MongoDB."
-    ),
-)
+@router.post("/vendor", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_vendor_document(
-    file: UploadFile = File(..., description="Vendor document (PDF or TXT, max 20 MB)"),
-    current_user: dict = Depends(get_current_user),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
 ):
     return await _process_upload(file, doc_type="vendor", current_user=current_user)
 
-
-@router.post(
-    "/tender",
-    response_model=DocumentUploadResponse,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
-    status_code=status.HTTP_201_CREATED,
-    summary="Upload a tender document for AI extraction",
-    description=(
-        "Upload a government or enterprise tender document (PDF/TXT). "
-        "The system extracts scope, eligibility, certifications, technical specs, "
-        "keywords, and stores everything in MongoDB for matching."
-    ),
-)
+@router.post("/tender", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_tender_document(
-    file: UploadFile = File(..., description="Tender document (PDF or TXT, max 20 MB)"),
-    current_user: dict = Depends(get_current_user),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
 ):
     return await _process_upload(file, doc_type="tender", current_user=current_user)
 
-@router.get(
-    "/my-documents",
-    response_model=List[DocumentUploadResponse],
-    summary="Get logged in user's uploaded documents",
-)
+@router.get("/my-documents", response_model=List[DocumentUploadResponse])
 async def get_my_documents(
     doc_type: str = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     db = get_db()
-    query = {"uploaded_by": str(current_user["_id"])}  
+    query = {"uploaded_by": str(current_user.id)}  
     if doc_type:
         query["type"] = doc_type
     
     docs = await db.documents.find(query).sort("created_at", -1).to_list(100)
     return [DocumentUploadResponse(**document_helper(doc)) for doc in docs]
 
-
-@router.get(
-    "/tenders/all",
-    response_model=List[DocumentUploadResponse],
-    summary="Get all completed tenders in the system",
-)
-async def get_all_tenders(
-    current_user: dict = Depends(get_current_user),
-):
+@router.get("/tenders/all", response_model=List[DocumentUploadResponse])
+async def get_all_tenders():
     db = get_db()
-    # Find all tenders that are completed. 
-    # In a real app, you might filter by org or public status.
     docs = await db.documents.find({"type": "tender", "status": "completed"}).sort("created_at", -1).to_list(100)
     return [DocumentUploadResponse(**document_helper(doc)) for doc in docs]
 
-
-@router.get(
-    "/documents/{doc_id}",
-    response_model=DocumentUploadResponse,
-    summary="Get status and details of a single uploaded document",
-)
+@router.get("/documents/{doc_id}", response_model=DocumentUploadResponse)
 async def get_document(
     doc_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    from bson import ObjectId
     if not ObjectId.is_valid(doc_id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid document ID format")
+        raise HTTPException(status_code=400, detail="Invalid document ID format")
         
     db = get_db()
     doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
     if not doc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
         
-    # Check tenant access
-    user_id_str = str(current_user["_id"])
-    user_org_id = current_user.get("org_id")
-    
-    if doc.get("uploaded_by") != user_id_str and doc.get("org_id") != user_org_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this document")
+    if doc.get("uploaded_by") != str(current_user.id) and doc.get("org_id") != str(current_user.org_id):
+        raise HTTPException(status_code=403, detail="Access denied")
         
     return DocumentUploadResponse(**document_helper(doc))
-
-

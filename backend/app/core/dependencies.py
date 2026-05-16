@@ -2,30 +2,31 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 import logging
+import uuid
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .database import get_db
+from .postgres import get_pg_db
 from .security import decode_access_token
-from bson import ObjectId
+from app.db.models.user import User
+from .redis_client import get_redis
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
 bearer_scheme = HTTPBearer()
 
-
-from .redis_client import get_redis
-
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_pg_db),
 ):
     """
-    Extract and validate the JWT bearer token.
+    Extract and validate the JWT bearer token against PostgreSQL.
     
     Security model:
-    - Token type must be 'access' (prevents refresh token reuse as bearer)
-    - Redis blacklist is checked when Redis is available (best-effort)
-    - With short-lived tokens (15 min), the blacklist window is small
-    - Falls back gracefully if Redis is unavailable — logs a warning
+    - Token type must be 'access'
+    - Redis blacklist is checked if available
+    - User is fetched from PostgreSQL using the UUID in the 'sub' claim
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -34,17 +35,18 @@ async def get_current_user(
     )
     token = credentials.credentials
 
-    # ── 1. Validate token signature and type ─────────────────────────────────
+    # 1. Validate token signature and type
     try:
-        payload = decode_access_token(token)  # raises JWTError if wrong type
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        payload = decode_access_token(token)
+        user_id_str: str = payload.get("sub")
+        if user_id_str is None:
             raise credentials_exception
-    except JWTError as exc:
+        user_id = uuid.UUID(user_id_str)
+    except (JWTError, ValueError) as exc:
         logger.warning("[Auth] JWT validation failed: %s", exc)
         raise credentials_exception
 
-    # ── 2. Check Redis blacklist (best-effort; logged if unavailable) ─────────
+    # 2. Check Redis blacklist
     redis = get_redis()
     if redis is not None:
         try:
@@ -56,20 +58,13 @@ async def get_current_user(
                     headers={"WWW-Authenticate": "Bearer"},
                 )
         except HTTPException:
-            raise  # re-raise blacklist 401 as-is
+            raise
         except Exception as redis_exc:
-            # Redis unavailable: log and continue — access tokens are short-lived
-            logger.warning(
-                "[Auth] Redis blacklist check failed (Redis unavailable): %s. "
-                "Proceeding with JWT validation only.", redis_exc
-            )
-    else:
-        logger.warning("[Auth] Redis client not available — blacklist check skipped")
+            logger.warning("[Auth] Redis blacklist check failed: %s", redis_exc)
 
-    # ── 3. Fetch user from database ───────────────────────────────────────────
-    db = get_db()
+    # 3. Fetch user from PostgreSQL
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.scalar(select(User).where(User.id == user_id))
     except Exception as exc:
         logger.error("[Auth] Database lookup failed for user_id=%s: %s", user_id, exc)
         raise credentials_exception
@@ -77,7 +72,7 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
-    if not user.get("is_active", True):
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is deactivated. Contact your administrator.",
@@ -85,15 +80,13 @@ async def get_current_user(
 
     return user
 
-
 def require_role(*roles: str):
     """Dependency factory: enforces that the current user has one of the given roles."""
-    async def role_checker(current_user: dict = Depends(get_current_user)):
-        if current_user.get("role") not in roles:
+    async def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required roles: {list(roles)}"
             )
         return current_user
     return role_checker
-

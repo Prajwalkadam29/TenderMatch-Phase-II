@@ -37,15 +37,15 @@ htmlcov/
 .tox/
 
 # Node / JS
-node_modules/
-dist/
-dist-ssr/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
 *.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
+frontend/package-lock.json
+frontend/yarn.lock
 
 # IDEs
 .idea/

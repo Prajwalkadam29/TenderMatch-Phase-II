@@ -87,8 +87,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
+      - ./backend:/app
       - uploads_data:/app/uploads
-      - faiss_data:/app/faiss_store
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -124,8 +124,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
+      - ./backend:/app
       - uploads_data:/app/uploads
-      - faiss_data:/app/faiss_store
 
   # ── Celery Beat ──────────────────────────────────────────────────────────────
   # Runs scheduled tasks (e.g. hourly scraper, daily re-matching, cleanup)
@@ -184,6 +184,4 @@ volumes:
   postgres_data:
     driver: local
   uploads_data:
-    driver: local
-  faiss_data:
     driver: local

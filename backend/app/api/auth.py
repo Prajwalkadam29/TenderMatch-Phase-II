@@ -1,7 +1,10 @@
 """
 auth.py
 -------
-Authentication endpoints:
+Authentication endpoints — PostgreSQL-only implementation.
+
+All user and organization data is stored and fetched exclusively from
+PostgreSQL (SQLAlchemy). MongoDB is NOT used for auth.
 
 POST /auth/register  → create account, receive access + refresh tokens
 POST /auth/login     → authenticate, receive access + refresh tokens
@@ -10,13 +13,19 @@ POST /auth/logout    → invalidate current access token via Redis blacklist
 GET  /auth/me        → return current user profile
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
+import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from bson import ObjectId
-from jose import JWTError
 
-from app.core.database import get_db
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi_limiter.depends import RateLimiter
+from jose import JWTError
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.postgres import get_pg_db
 from app.core.security import (
     hash_password,
     verify_password,
@@ -24,38 +33,74 @@ from app.core.security import (
     create_refresh_token,
     decode_refresh_token,
 )
-from app.core.dependencies import get_current_user
 from app.core.config import settings
+from app.core.redis_client import get_redis
+from app.core.dependencies import get_current_user
 from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, MeResponse
-from app.models.user import user_helper
-from app.models.organization import org_helper
-from app.services.pg_sync import sync_org_to_pg, sync_user_to_pg, update_user_last_login, write_audit_log
+from app.db.models.user import User
+from app.db.models.organization import Organization
+from app.db.models.subscription import Subscription, SubscriptionPlan, SubscriptionStatus
+from app.db.models.audit_log import AuditLog
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# ─── Cookie name constant ──────────────────────────────────────────────────────
 REFRESH_COOKIE_NAME = "refresh_token"
 
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
-    """
-    Store refresh token in an httpOnly, Secure, SameSite=Strict cookie.
-    This prevents the token from being read by JavaScript (XSS protection).
-    """
+    """Store refresh token in an httpOnly, Secure, SameSite=Strict cookie."""
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=(settings.ENVIRONMENT != "development"),  # HTTPS only in production
+        secure=(settings.ENVIRONMENT != "development"),
         samesite="strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/auth/refresh",  # Cookie only sent to the refresh endpoint
+        path="/auth/refresh",
     )
 
 
-# ─── Register ──────────────────────────────────────────────────────────────────
+def _user_to_dict(user: User, org: Optional[Organization] = None) -> dict:
+    """Serialize a SQLAlchemy User row into the dict the frontend expects."""
+    return {
+        "id": str(user.id),
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "org_id": str(user.org_id) if user.org_id else None,
+        "org_name": org.name if org else None,
+        "preferences": {},
+    }
 
-from fastapi_limiter.depends import RateLimiter
+
+async def _write_audit(
+    session: AsyncSession,
+    action: str,
+    actor_id: Optional[uuid.UUID],
+    org_id: Optional[uuid.UUID],
+    resource_type: str,
+    resource_id: str,
+    description: str,
+) -> None:
+    """Best-effort audit log write — never raises."""
+    try:
+        entry = AuditLog(
+            actor_id=actor_id,
+            org_id=org_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            description=description,
+            status="success",
+        )
+        session.add(entry)
+        # Note: commit happens when the session context manager exits
+    except Exception as exc:
+        logger.warning("[Auth] Audit log write failed (non-fatal): %s", exc)
+
+
+# ─── Register ──────────────────────────────────────────────────────────────────
 
 @router.post(
     "/register",
@@ -63,108 +108,103 @@ from fastapi_limiter.depends import RateLimiter
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
-async def register(payload: RegisterRequest, response: Response):
+async def register(
+    payload: RegisterRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_pg_db),
+):
     """Register a new user. If role=ADMIN1, also creates an organization."""
-    db = get_db()
 
-    # Check email uniqueness
-    existing = await db.users.find_one({"email": payload.email})
+    # ── 1. Email uniqueness check ──────────────────────────────────────────
+    existing = await db.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="An account with this email already exists.",
         )
 
-    # Validate ADMIN1 registration
+    # ── 2. Validate ADMIN1 payload ─────────────────────────────────────────
     if payload.role == "ADMIN1" and not payload.org_name:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Organization name is required when registering as Admin.",
         )
 
-    org_id = None
+    # ── 3. Create organization for ADMIN1 ──────────────────────────────────
+    org: Optional[Organization] = None
+    pg_org_id: Optional[uuid.UUID] = None
 
-    # Create organization for ADMIN1
     if payload.role == "ADMIN1":
-        org_doc = {
-            "name": payload.org_name,
-            "owner_id": None,
-            "industry": payload.org_industry,
-            "description": None,
-            "website": None,
-            "location": None,
-            "created_at": datetime.now(timezone.utc),
-            "is_active": True,
-        }
-        org_result = await db.organizations.insert_one(org_doc)
-        org_id = str(org_result.inserted_id)
-
-    # If USER with existing org_id provided
-    if payload.role == "USER" and payload.org_id:
-        org_id = payload.org_id
-
-    # Create the user document
-    user_doc = {
-        "name": payload.name,
-        "email": payload.email,
-        "password_hash": hash_password(payload.password),
-        "role": payload.role,
-        "org_id": org_id,
-        "preferences": {},
-        "created_at": datetime.now(timezone.utc),
-        "is_active": True,
-    }
-
-    user_result = await db.users.insert_one(user_doc)
-    user_id = str(user_result.inserted_id)
-
-    # Update org's owner_id
-    if payload.role == "ADMIN1" and org_id:
-        await db.organizations.update_one(
-            {"_id": ObjectId(org_id)},
-            {"$set": {"owner_id": user_id}},
-        )
-
-    # Fetch full user doc
-    created_user = await db.users.find_one({"_id": ObjectId(user_id)})
-    user_data = user_helper(created_user)
-
-    # ── Phase 2: Dual-write to PostgreSQL (non-fatal) ─────────────────────────
-    import asyncio
-    pg_org_id = None
-    if payload.role == "ADMIN1" and org_id:
-        pg_org_id = await sync_org_to_pg(
-            mongo_org_id=org_id,
+        org = Organization(
             name=payload.org_name,
             industry=payload.org_industry,
+            is_active=True,
         )
-    await sync_user_to_pg(
-        mongo_user_id=user_id,
+        db.add(org)
+        await db.flush()  # populate org.id before referencing it below
+
+        # Auto-create a free-trial subscription
+        now = datetime.now(timezone.utc)
+        if now.month < 12:
+            trial_end = now.replace(month=now.month + 1, day=1)
+        else:
+            trial_end = now.replace(year=now.year + 1, month=1, day=1)
+
+        sub = Subscription(
+            org_id=org.id,
+            plan=SubscriptionPlan.FREE,
+            status=SubscriptionStatus.TRIALING,
+            trial_ends_at=trial_end,
+        )
+        db.add(sub)
+        pg_org_id = org.id
+
+    elif payload.role == "USER" and payload.org_id:
+        # USER joining an existing org — verify the org exists
+        try:
+            pg_org_id = uuid.UUID(payload.org_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid org_id format.")
+        org = await db.scalar(select(Organization).where(Organization.id == pg_org_id))
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found.")
+
+    # ── 4. Create the user ────────────────────────────────────────────────
+    user = User(
         name=payload.name,
         email=payload.email,
         password_hash=hash_password(payload.password),
         role=payload.role,
-        mongo_org_id=org_id,
-        pg_org_id=pg_org_id,
+        org_id=pg_org_id,
+        is_active=True,
     )
-    await write_audit_log(
+    db.add(user)
+    await db.flush()  # populate user.id
+
+    # Set org owner for ADMIN1 (now that user.id is known)
+    if payload.role == "ADMIN1" and org:
+        org.owner_id = user.id
+
+    # ── 5. Audit log ──────────────────────────────────────────────────────
+    await _write_audit(
+        session=db,
         action="user.register",
-        actor_mongo_id=user_id,
-        org_mongo_id=org_id,
+        actor_id=user.id,
+        org_id=pg_org_id,
         resource_type="user",
-        resource_id=user_id,
+        resource_id=str(user.id),
         description=f"New {payload.role} registered: {payload.email}",
     )
-    # ──────────────────────────────────────────────────────────────────────
 
-    # Issue tokens
-    token_payload = {"sub": user_id, "role": payload.role}
+    # db session commits automatically when the context manager exits (get_pg_db)
+
+    # ── 6. Issue tokens ───────────────────────────────────────────────────
+    token_payload = {"sub": str(user.id), "role": user.role}
     access_token = create_access_token(token_payload)
     refresh_token = create_refresh_token(token_payload)
-
     _set_refresh_cookie(response, refresh_token)
 
-    return TokenResponse(access_token=access_token, user=user_data)
+    return TokenResponse(access_token=access_token, user=_user_to_dict(user, org))
 
 
 # ─── Login ─────────────────────────────────────────────────────────────────────
@@ -174,49 +214,56 @@ async def register(payload: RegisterRequest, response: Response):
     response_model=TokenResponse,
     dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
-async def login(payload: LoginRequest, response: Response):
-    """Login with email and password. Returns access token + sets refresh cookie."""
-    db = get_db()
+async def login(
+    payload: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_pg_db),
+):
+    """Login with email and password."""
 
-    user = await db.users.find_one({"email": payload.email})
+    user = await db.scalar(select(User).where(User.email == payload.email))
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
 
-    if not verify_password(payload.password, user["password_hash"]):
+    if not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
 
-    if not user.get("is_active", True):
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been deactivated. Contact your admin.",
         )
 
-    user_data = user_helper(user)
-    token_payload = {"sub": str(user["_id"]), "role": user["role"]}
+    # Update last_login_at
+    user.last_login_at = datetime.now(timezone.utc)
+
+    # Fetch org for response
+    org: Optional[Organization] = None
+    if user.org_id:
+        org = await db.scalar(select(Organization).where(Organization.id == user.org_id))
+
+    await _write_audit(
+        session=db,
+        action="user.login",
+        actor_id=user.id,
+        org_id=user.org_id,
+        resource_type="user",
+        resource_id=str(user.id),
+        description=f"Login: {user.email}",
+    )
+
+    token_payload = {"sub": str(user.id), "role": user.role}
     access_token = create_access_token(token_payload)
     refresh_token = create_refresh_token(token_payload)
-
     _set_refresh_cookie(response, refresh_token)
 
-    # ── Phase 2: Dual-write to PostgreSQL (non-fatal) ─────────────────────────
-    await update_user_last_login(mongo_user_id=str(user["_id"]))
-    await write_audit_log(
-        action="user.login",
-        actor_mongo_id=str(user["_id"]),
-        org_mongo_id=user.get("org_id"),
-        resource_type="user",
-        resource_id=str(user["_id"]),
-        description=f"Login: {user['email']}",
-    )
-    # ──────────────────────────────────────────────────────────────────────
-
-    return TokenResponse(access_token=access_token, user=user_data)
+    return TokenResponse(access_token=access_token, user=_user_to_dict(user, org))
 
 
 # ─── Refresh ───────────────────────────────────────────────────────────────────
@@ -225,13 +272,10 @@ async def login(payload: LoginRequest, response: Response):
     "/refresh",
     response_model=TokenResponse,
     summary="Exchange a valid refresh token for a new access token",
-    description=(
-        "The refresh token must be present in the httpOnly 'refresh_token' cookie "
-        "set during login or registration. Returns a new short-lived access token."
-    ),
 )
 async def refresh_token_endpoint(
     response: Response,
+    db: AsyncSession = Depends(get_pg_db),
     refresh_token: Optional[str] = Cookie(default=None, alias=REFRESH_COOKIE_NAME),
 ):
     """Issue a new access token using the refresh token cookie."""
@@ -245,64 +289,52 @@ async def refresh_token_endpoint(
         raise credentials_exception
 
     try:
-        payload = decode_refresh_token(refresh_token)
-        user_id: str = payload.get("sub")
-        if not user_id:
+        token_payload = decode_refresh_token(refresh_token)
+        user_id_str: str = token_payload.get("sub")
+        if not user_id_str:
             raise credentials_exception
-    except JWTError:
+        user_uuid = uuid.UUID(user_id_str)
+    except (JWTError, ValueError):
         raise credentials_exception
 
-    db = get_db()
-    try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except Exception:
+    user = await db.scalar(select(User).where(User.id == user_uuid))
+    if not user or not user.is_active:
         raise credentials_exception
 
-    if not user:
-        raise credentials_exception
+    org: Optional[Organization] = None
+    if user.org_id:
+        org = await db.scalar(select(Organization).where(Organization.id == user.org_id))
 
-    if not user.get("is_active", True):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is deactivated.",
-        )
-
-    # Issue new access token (and rotate refresh token)
-    token_payload = {"sub": str(user["_id"]), "role": user["role"]}
-    new_access_token = create_access_token(token_payload)
-    new_refresh_token = create_refresh_token(token_payload)
-
+    new_token_payload = {"sub": str(user.id), "role": user.role}
+    new_access_token = create_access_token(new_token_payload)
+    new_refresh_token = create_refresh_token(new_token_payload)
     _set_refresh_cookie(response, new_refresh_token)
 
-    user_data = user_helper(user)
-    return TokenResponse(access_token=new_access_token, user=user_data)
+    return TokenResponse(access_token=new_access_token, user=_user_to_dict(user, org))
 
 
 # ─── Me ────────────────────────────────────────────────────────────────────────
 
 @router.get("/me", response_model=MeResponse)
-async def get_me(current_user: dict = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user's profile."""
     return MeResponse(
-        id=str(current_user["_id"]),
-        name=current_user.get("name", ""),
-        email=current_user.get("email", ""),
-        role=current_user.get("role", "USER"),
-        org_id=current_user.get("org_id"),
-        preferences=current_user.get("preferences", {}),
+        id=str(current_user.id),
+        name=current_user.name,
+        email=current_user.email,
+        role=current_user.role,
+        org_id=str(current_user.org_id) if current_user.org_id else None,
+        preferences={},
     )
 
 
 # ─── Logout ────────────────────────────────────────────────────────────────────
 
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.core.redis_client import get_redis
-
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     response: Response,
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Log out a user by:
@@ -314,21 +346,10 @@ async def logout(
 
     if redis:
         try:
-            # Blacklist for only the remaining TTL of the access token
-            # (ACCESS_TOKEN_EXPIRE_MINUTES is short, so this is lightweight)
             expire_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
             await redis.setex(f"blacklist:{token}", expire_seconds, "true")
         except Exception as exc:
-            # Non-fatal — cookie will still be cleared
-            import logging
-            logging.getLogger(__name__).warning(
-                "[Logout] Redis blacklist write failed (non-fatal): %s", exc
-            )
+            logger.warning("[Logout] Redis blacklist write failed (non-fatal): %s", exc)
 
-    # Clear the refresh token cookie
-    response.delete_cookie(
-        key=REFRESH_COOKIE_NAME,
-        path="/auth/refresh",
-    )
-
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/auth/refresh")
     return {"status": "ok", "message": "Successfully logged out"}

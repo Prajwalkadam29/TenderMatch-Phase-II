@@ -21,8 +21,9 @@ async def lifespan(app: FastAPI):
     redis = get_redis()
     await FastAPILimiter.init(redis)
 
-    # Pre-load embedding model for pgvector query encoding
-    await get_embedding_service().warmup()
+    # Load embedding model in background so app becomes healthy faster
+    import asyncio
+    asyncio.create_task(get_embedding_service().warmup())
     yield
     await close_postgres()
     await close_redis()

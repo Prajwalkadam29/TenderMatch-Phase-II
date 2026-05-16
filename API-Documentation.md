@@ -104,16 +104,26 @@ Extracts structured capability metadata from a vendor's technical dossier.
 
 ---
 
-## 6. Matching Engine
+## 6. Matching Engine (v4.0)
 
-### Semantic Matching (`GET /match/{vendor_id}`)
-Executes high-speed cosine similarity search in `pgvector`.
-- **Params:** `k` (limit, default 10), `explain` (boolean).
-- **Explanation:** If `explain=true`, the Groq LLM generates a natural language justification for the match.
+### Run AI Match Cycle (`POST /match/run`)
+Triggers a fresh evaluation of a vendor profile against all active Global and Tenant-owned tenders.
+- **Body:** `{"vendor_profile_id": "uuid"}`
+- **Engine Logic:** Applies 7-factor weighted scoring (Domain, Finance, Geo, etc.) and deterministic Hard Filters.
+- **Persistence:** Results are stored in the match history.
 
-### Batch Structured Matching (`POST /match/structured/run/{vendor_id}`)
-Hard-filter matching against the entire tender database.
-- **Criteria:** Industry alignment, turnover requirements, and geographic eligibility.
+### Get Match History (`GET /match/history`)
+Retrieves past matching runs for the current user.
+- **Params:** `vendor_profile_id` (optional filter).
+
+### Get Match Detail (`GET /match/{match_id}`)
+Fetches a detailed breakdown of a specific match, including:
+- **Score Breakdown:** Exact percentages for all 7 factors.
+- **Strengths & Weaknesses:** Contextual lists of why the vendor is/isn't a fit.
+- **AI Explanation:** Natural language summary generated for stakeholders.
+
+### Engine Status (`GET /match/status`)
+Returns platform-level statistics on tenders analyzed and global availability.
 
 ---
 

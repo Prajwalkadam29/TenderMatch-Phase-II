@@ -1,51 +1,68 @@
+"""
+structured_matching_service.py
+------------------------------
+Evaluates how well a given vendor matches a given tender using strict 
+eligibility filtering and semantic field-wise scoring.
+
+Polyglot Persistence:
+- Vendor Profile is fetched from PostgreSQL (JSONB).
+- Tender data is passed in (from MongoDB).
+- Match results are saved to MongoDB.
+"""
+
 from datetime import datetime, timezone
+import uuid
 import numpy as np
-from bson import ObjectId
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
+from app.core.postgres import get_pg_session
 from app.services.embedding_service import get_embedding_service
-from app.models.vendor_profile import vendor_profile_helper
+from app.db.models.document import VendorProfile
+from app.db.models.user import User
 
-async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None) -> dict:
+async def evaluate_match(vendor_id: str, tender: dict, current_user: User = None) -> dict:
     """
-    Evaluates how well a given vendor matches a given tender using strict 
-    eligibility filtering and semantic field-wise scoring.
+    vendor_id: UUID string or vendor_id shortcut (V-...)
+    tender: dict from MongoDB
     """
-    db = get_db()
+    mongo_db = get_db()
     
-    # ── Tenant-isolated vendor fetch ─────────────────────────────────────────
-    # Build a query that enforces org_id isolation when a user context is provided.
-    # This prevents vendors from one organisation being matched in another's context.
-    vendor_query: dict = {}
-    if current_user:
-        org_id = current_user.get("org_id")
-        user_id = str(current_user.get("_id", ""))
-        if org_id:
-            vendor_query["org_id"] = org_id
+    # ── Fetch Vendor Context from PostgreSQL ───────────────────────────────
+    async with get_pg_session() as session:
+        # 1. Try matching by UUID if it looks like one
+        vendor_uuid = None
+        try:
+            vendor_uuid = uuid.UUID(vendor_id)
+        except ValueError:
+            pass
+
+        query = select(VendorProfile)
+        if vendor_uuid:
+            query = query.where(VendorProfile.id == vendor_uuid)
         else:
-            vendor_query["user_id"] = user_id
+            query = query.where(VendorProfile.vendor_id == vendor_id)
 
-    # Try matching by vendor_id string first, then fallback to ObjectId
-    vendor_doc = await db.vendor_profiles.find_one({"vendor_id": vendor_id, **vendor_query})
-    if not vendor_doc:
-        if ObjectId.is_valid(vendor_id):
-            vendor_doc = await db.vendor_profiles.find_one(
-                {"_id": ObjectId(vendor_id), **vendor_query}
-            )
-        
-    if not vendor_doc:
-        raise ValueError(f"Vendor not found or access denied for ID: {vendor_id}")
-    
-    vendor = vendor_doc
+        # Tenant isolation
+        if current_user:
+            query = query.where(VendorProfile.org_id == current_user.org_id)
+
+        vendor = await session.scalar(query)
+        if not vendor:
+            raise ValueError(f"Vendor not found or access denied for ID: {vendor_id}")
+
+    profile_data = vendor.profile_data
 
     # Default values for matching
-    match_id = f"MR-{vendor.get('vendor_id', 'V-000')}-{tender.get('tender_id', 'T-000')}"
+    match_id = f"MR-{vendor.vendor_id}-{tender.get('tender_id', 'T-000')}"
     matched_at = datetime.now(timezone.utc).isoformat()
     
     # Setup results output
     result = {
         "_meta": {
             "match_id": match_id,
-            "vendor_id": vendor.get("vendor_id"),
+            "vendor_id": vendor.vendor_id,
             "tender_id": tender.get("tender_id"),
             "matched_at": matched_at,
             "engine_version": "2.1.0",
@@ -75,14 +92,14 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
         "recommendation_detail": ""
     }
 
-    # Extract vendor fields safely
-    identity = vendor.get('identity', {})
-    geography = vendor.get('geography', {})
-    business = vendor.get('business_domain', {})
-    financials = vendor.get('financials', {})
-    projects = vendor.get('past_project_experience', {}).get('projects', [])
-    certs = vendor.get('certifications', {})
-    compliance = vendor.get('compliance', {})
+    # Extract vendor fields safely from JSONB
+    identity = profile_data.get('identity', {})
+    geography = profile_data.get('geography', {})
+    business = profile_data.get('business_domain', {})
+    financials = profile_data.get('financials', {})
+    projects = profile_data.get('past_project_experience', {}).get('projects', [])
+    certs = profile_data.get('certifications', {})
+    compliance = profile_data.get('compliance', {})
 
     # ─── HARD FILTERS ────────────────────────────────────────────────────────
     
@@ -104,7 +121,7 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
         })
 
     # HF-02: Domain Match
-    tender_domain = tender.get("domain") # None means unrestricted
+    tender_domain = tender.get("domain")
     vendor_primary_domains = business.get("primary_domains", [])
     if tender_domain is not None and tender_domain not in vendor_primary_domains:
         result["hard_filter_results"]["filters"].append({
@@ -142,7 +159,6 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
         
     # HF-04: Certifications
     required_certs = set(tender.get("mandatory_certifications", []))
-    
     vendor_iso = [x.get("standard") for x in certs.get("iso_certifications", [])]
     vendor_licenses = [x.get("license_type") for x in certs.get("domain_licenses", [])]
     vendor_all_certs = set(vendor_iso + vendor_licenses)
@@ -156,7 +172,7 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
             "detail": f"Missing mandatory certifications: {', '.join(missing_certs)}"
         })
     else:
-         result["hard_filter_results"]["filters"].append({
+        result["hard_filter_results"]["filters"].append({
             "filter_id": "HF-04",
             "filter_name": "Mandatory Certifications",
             "result": "PASS",
@@ -190,17 +206,13 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
         result["weighted_score"]["final_score"] = 0.0
         result["recommendation"] = "NOT_ELIGIBLE"
         result["recommendation_detail"] = f"Failed {len(failed_filters)} hard filters."
-        # Prepare final exact schema output
+        
         final_output = {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "$id": "tendermatch/match-result/v1",
-            "title": "TenderMatch Match Result Schema",
             "version": "1.0.0",
             "match_result": result
         }
-
-        # Save to MongoDB match_results collection
-        await db.match_results.insert_one(final_output)
+        await mongo_db.match_results.insert_one(final_output)
         final_output.pop("_id", None)
         return final_output
         
@@ -217,7 +229,7 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
     elif willing: geo_score = 0.5
 
     # 3. Financial Capacity (0.15)
-    tender_value = tender.get("estimated_value", min_turnover) # fallback
+    tender_value = tender.get("estimated_value", min_turnover)
     fin_score = 0.5
     if tender_value > 0:
         ratio = vendor_turnover / tender_value
@@ -226,7 +238,7 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
         elif ratio >= 1: fin_score = 0.7
         else: fin_score = 0.4
     else:
-        fin_score = 0.8 # Default favorable
+        fin_score = 0.8
 
     # 4. Experience Match (0.20)
     exp_score = 0.0
@@ -262,34 +274,20 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
     comp_score = max(0.0, comp_score)
 
     weights = {
-        "domain": 0.20,
-        "geography": 0.15,
-        "financial": 0.15,
-        "experience": 0.20,
-        "certification": 0.10,
-        "semantic": 0.15,
-        "compliance": 0.05
+        "domain": 0.20, "geography": 0.15, "financial": 0.15, "experience": 0.20,
+        "certification": 0.10, "semantic": 0.15, "compliance": 0.05
     }
 
     raw_scores = {
-        "domain": domain_score,
-        "geography": geo_score,
-        "financial": fin_score,
-        "experience": exp_score,
-        "certification": cert_score,
-        "semantic": sem_score,
+        "domain": domain_score, "geography": geo_score, "financial": fin_score,
+        "experience": exp_score, "certification": cert_score, "semantic": sem_score,
         "compliance": comp_score
     }
 
     base_score = sum(weights[k] * raw_scores[k] for k in weights)
 
-    # ─── COMPLETENESS ADDITIVE BOOST ─────────────────────────────────────────
-    # Instead of a multiplicative penalty (which collapses scores for new/partial
-    # profiles), we apply a small additive boost (max +5%) for complete profiles.
-    # A vendor with 50% completeness still gets a fair base_score — they just
-    # don't receive the quality boost that a fully-filled profile earns.
-    completeness_ratio = vendor.get("profile_completeness_pct", 50) / 100.0
-    COMPLETENESS_BOOST_MAX = 0.05   # up to +5 percentage points
+    completeness_ratio = vendor.profile_completeness_pct / 100.0
+    COMPLETENESS_BOOST_MAX = 0.05
     completeness_boost = completeness_ratio * COMPLETENESS_BOOST_MAX
 
     final_score = min(1.0, base_score + completeness_boost)
@@ -312,17 +310,12 @@ async def evaluate_match(vendor_id: str, tender: dict, current_user: dict = None
     result["recommendation"] = "HIGH_MATCH" if final_score > 0.75 else "MODERATE_MATCH"
     result["recommendation_detail"] = f"Score {round(final_score*100)} — meets all hard filters."
 
-    # Prepare final exact schema output
     final_output = {
         "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "tendermatch/match-result/v1",
-        "title": "TenderMatch Match Result Schema",
         "version": "1.0.0",
         "match_result": result
     }
-
-    # Save to MongoDB match_results collection
-    await db.match_results.insert_one(final_output)
+    await mongo_db.match_results.insert_one(final_output)
     final_output.pop("_id", None)
     
     return final_output
