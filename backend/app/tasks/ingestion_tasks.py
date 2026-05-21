@@ -49,10 +49,13 @@ logger = logging.getLogger(__name__)
 def _run_async(coro):
     """Run an async coroutine synchronously inside a Celery worker thread."""
     try:
-        return asyncio.run(coro)
-    except RuntimeError:
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(coro)
+        if loop.is_closed():
+            raise RuntimeError
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 

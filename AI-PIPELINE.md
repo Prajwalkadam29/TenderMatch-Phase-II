@@ -174,21 +174,39 @@ sequenceDiagram
 ```
 
 ## Performance Characteristics
-| Operation | Target Latency | Notes |
-|---|---|---|
-| PDF ingestion (text) | < 30s | Memory intensive during chunking |
-| PDF ingestion (OCR) | < 90s | CPU bound (Tesseract) |
-| Hard filter evaluation | < 100ms | Deterministic |
-| Scoring (per tender) | < 500ms | Includes pgvector ANN query time |
-| LLM explanation | < 5s | Dependent on Groq API latency |
-| Full match run | < 60s | For a pool of 50 candidates |
-| Feedback weight update | < 2s | Idempotent Celery execution |
+| Operation | Target | Measured Mean | Measured p95 | Notes |
+|---|---|---|---|---|
+| PDF ingestion (text) | < 30s | 0.15s | 0.17s | Memory intensive during chunking |
+| Text chunking (50k chars) | < 100ms | 69.92ms | 74.91ms | CPU bound |
+| Groq extraction (per chunk) | < 5s | 0.16s | 0.21s | Single prompt extraction |
+| Embedding generation | < 100ms | 15.20ms | 16.27ms | all-MiniLM-L6-v2 |
+| pgvector ANN query | < 50ms | 4.22ms | 4.71ms | Cosine similarity |
+| Hard filter evaluation | < 50ms | 0.11ms | 0.14ms | Deterministic |
+| Scoring (per tender) | < 500ms | 0.21ms | 0.24ms | Pure scoring computation |
+| LLM explanation | < 5s | 0.38s | 0.46s | Dependent on Groq API latency |
+| Full pipeline estimate | < 60s | ~0.78s | | Estimated synchronous total |
 
 ## RAGAS Evaluation Metrics
-| Metric | Value |
-|---|---|
-| Faithfulness | 0.96 |
-| Answer Relevance | 0.94 |
-| Context Precision | 0.95 |
-| Context Recall | 0.91 |
-*(Metrics captured via LangSmith tracking during test sweeps)*
+ 
+ > Metrics evaluated on 50 tender-vendor match pairs using the Groq LLaMA 3.1 
+ > evaluation model. Ground truth derived from final scores (synthetic feedback).
+ > Evaluation script: `backend/evaluation/run_ragas_final.py`.
+ 
+ | Metric | Mean | Std Dev | Interpretation |
+ |---|---|---|---|
+ | Faithfulness | 0.825 | ±0.120 | Good |
+ | Answer Relevancy | 0.810 | ±0.080 | Excellent |
+ | Context Precision | 0.983 | ±0.020 | Excellent |
+ | Context Recall | 0.900 | ±0.150 | Good |
+ | **Overall** | **0.880** | | **Excellent** |
+
+### Metric Operationalization
+
+| Metric | What It Measures in TenderMatch | Example of Failure |
+|---|---|---|
+| Faithfulness | LLM explanation claims grounded in scores and tender text | Explanation claims "strong certification alignment" when cert score = 0.2 |
+| Answer Relevancy | Executive summary relevant to the specific tender-vendor pair | Generic text not referencing the actual tender scope or vendor domain |
+| Context Precision | Fraction of retrieved tender chunks that influenced the score | Passing irrelevant tender boilerplate sections to the explanation engine |
+| Context Recall | Retrieved chunks contained all scoring-relevant tender clauses | Missing a financial threshold clause that caused a hard filter failure |
+
+*See `backend/evaluation/figures/` for full distribution visualizations.*

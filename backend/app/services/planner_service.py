@@ -160,7 +160,7 @@ Respond ONLY with a JSON object matching this structure:
 """
         client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

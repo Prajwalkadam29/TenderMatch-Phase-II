@@ -75,7 +75,7 @@ async def extract_with_groq(document_text: str) -> dict:
     user_message = _USER_PROMPT_TEMPLATE.format(document_text=document_text)
 
     response = await client.chat.completions.create(
-        model="llama-3.3-70b-versatile",   # fast, large-context Groq model
+        model="llama-3.1-8b-instant",   # fast, large-context Groq model
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user",   "content": user_message},
@@ -153,7 +153,7 @@ Provide your critical analysis as JSON:
 """
 
     response = await client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": sys_prompt},
             {"role": "user",   "content": user_prompt},
@@ -209,7 +209,7 @@ QUESTION:
 
     try:
         response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": sys_prompt},
                 {"role": "user",   "content": user_prompt},

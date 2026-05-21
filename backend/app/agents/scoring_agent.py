@@ -53,6 +53,11 @@ async def scoring_agent(state: TenderMatchState) -> dict:
         retrieval_strategy=retrieval_strategy
     )
     
+    retrieval_scores = {
+        k: float(v)
+        for k, v in retrieval_scores.items()
+    }
+    
     semantic_score = retrieval_scores["hybrid_score"]
     logger.info("[Agent:Scoring] Hybrid score: %.4f (Vector: %.4f, BM25: %.4f, Alpha: %.1f)", 
                 semantic_score, retrieval_scores["vector_score"], 

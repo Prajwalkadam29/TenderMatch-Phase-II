@@ -335,7 +335,7 @@ async def _call_llm(prompt: str, retries: int = 3) -> Optional[dict]:
     for attempt in range(retries):
         try:
             response = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": _SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},

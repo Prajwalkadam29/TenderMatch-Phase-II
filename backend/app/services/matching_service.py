@@ -809,6 +809,9 @@ async def orchestrate_match(
     from app.services.explanation_service import generate_explanation
 
     mongo_db = get_db()
+    if mongo_db is None:
+        from app.core.celery_db import get_celery_db
+        mongo_db = get_celery_db()
     logger.info(
         "[Orchestrator] START vendor=%s tender=%s",
         vendor_profile_id, tender_mongo_id,
@@ -926,7 +929,7 @@ async def orchestrate_match(
     matched_at = datetime.now(timezone.utc).isoformat()
 
     final_result = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
+        "schema_url": "http://json-schema.org/draft-07/schema#",
         "version": "3.0.0",
         "match_result": {
             "_meta": {

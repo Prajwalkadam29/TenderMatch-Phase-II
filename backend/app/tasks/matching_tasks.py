@@ -39,10 +39,13 @@ logger = logging.getLogger(__name__)
 def _run_async(coro):
     """Run an async coroutine synchronously inside a Celery worker thread."""
     try:
-        return asyncio.run(coro)
-    except RuntimeError:
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(coro)
+        if loop.is_closed():
+            raise RuntimeError
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 # ─── Task 1: Single-pair match ────────────────────────────────────────────────
@@ -271,17 +274,17 @@ def process_feedback_task(
     logger.info(f"[FeedbackTask] START match={match_id} signal={signal} vp={vendor_profile_id}")
     
     try:
-        # Import inside the task to avoid circular dependency
+        # Synchronous now — no event-loop ownership issues in prefork workers
         from app.services.feedback_processor import process_match_feedback
         
-        result = _run_async(process_match_feedback(
+        result = process_match_feedback(
             match_id=match_id,
             signal=signal,
             vendor_profile_id=vendor_profile_id,
             org_id=org_id
-        ))
+        )
         
-        logger.info(f"[FeedbackTask] COMPLETE match={match_id}")
+        logger.info(f"[FeedbackTask] ✓ COMPLETE match={match_id} result={result.get('status')}")
         return result
     except Exception as exc:
         logger.error(
@@ -290,3 +293,4 @@ def process_feedback_task(
         )
         countdown = 60 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
+

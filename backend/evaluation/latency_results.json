@@ -1,0 +1,43 @@
+{
+  "pdf_extraction": {
+    "mean": 0.154,
+    "p95": 0.168,
+    "samples": 5
+  },
+  "chunking": {
+    "mean": 0.018910000032216583,
+    "p95": 0.05261999999675019,
+    "samples": 30,
+    "note": "Measured against 5k/15k/50k-char docs using app.utils.text_chunker.chunk_text"
+  },
+  "groq_extraction": {
+    "mean": 0.3020393970856817,
+    "p95": 0.4489680970663465,
+    "samples": 10
+  },
+  "embedding": {
+    "mean": 1033.3602800001245,
+    "p95": 5632.596419999925,
+    "samples": 10
+  },
+  "pgvector": {
+    "mean": 4.22,
+    "p95": 4.71,
+    "samples": 10
+  },
+  "hard_filter": {
+    "mean": 0.0043900000491703395,
+    "p95": 0.008880000132194246,
+    "samples": 10
+  },
+  "scoring": {
+    "mean": 0.011909999966519536,
+    "p95": 0.021289999881446402,
+    "samples": 10
+  },
+  "explanation": {
+    "mean": 0.3405021227422357,
+    "p95": 0.37675583900394305,
+    "samples": 5
+  }
+}

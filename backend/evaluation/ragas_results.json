@@ -1,0 +1,828 @@
+{
+  "metadata": {
+    "timestamp": "2026-05-21T22:01:28.541848",
+    "total_samples": 50,
+    "dataset_source": "ragas_dataset.json",
+    "eval_model": "llama-3.1-8b-instant"
+  },
+  "metrics": {
+    "faithfulness": {
+      "mean": 0.825,
+      "std": 0.12
+    },
+    "answer_relevancy": {
+      "mean": 0.81,
+      "std": 0.08
+    },
+    "context_precision": {
+      "mean": 0.983,
+      "std": 0.02
+    },
+    "context_recall": {
+      "mean": 0.9,
+      "std": 0.15
+    }
+  },
+  "per_sample_scores": [
+    {
+      "question": "Is vendor V-E015AEE9 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-E015AEE9 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Bihar, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-E015AEE9 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Bihar, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Bihar, India.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-E015AEE9 is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in Bihar, India.",
+      "faithfulness": 0.8628297313262119,
+      "answer_relevancy": 0.7627738716197824,
+      "context_precision": 0.9930520085927382,
+      "context_recall": 0.668199350241098
+    },
+    {
+      "question": "Is vendor V-C7CC58E0 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-C7CC58E0 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Rajasthan, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-C7CC58E0 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Rajasthan, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Rajasthan, India.",
+        "Matching Engine Output: The final weighted score computed is 65.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-C7CC58E0 is highly suitable for the Unknown Tender project. Their final score of 65.0 reflects their capabilities in IT and strong presence in Rajasthan, India.",
+      "faithfulness": 0.7786057668664306,
+      "answer_relevancy": 0.7458070422478028,
+      "context_precision": 1.0,
+      "context_recall": 0.8339892340836316
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 89.8.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 89.8 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.7509722574323443,
+      "answer_relevancy": 0.8175012554691724,
+      "context_precision": 0.9578773463580545,
+      "context_recall": 0.9494626712665745
+    },
+    {
+      "question": "Is vendor V-EVAL-002 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-002 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Water Works sector. Furthermore, they align perfectly with the geographical location of Lucknow, UP. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-002 has strong capabilities in Water Works. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Lucknow, UP and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Water Works sector within Lucknow, UP.",
+        "Matching Engine Output: The final weighted score computed is 63.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-002 is highly suitable for the Unknown Tender project. Their final score of 63.9 reflects their capabilities in Water Works and strong presence in Lucknow, UP.",
+      "faithfulness": 0.9317388648984295,
+      "answer_relevancy": 0.8859322290026735,
+      "context_precision": 0.9973911440063664,
+      "context_recall": 0.8263872524368271
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Chennai, Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Chennai, Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Chennai, Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in Chennai, Tamil Nadu.",
+      "faithfulness": 0.7147833459054627,
+      "answer_relevancy": 0.7399420664610444,
+      "context_precision": 0.9880251310055117,
+      "context_recall": 0.9128635507808911
+    },
+    {
+      "question": "Is vendor V-EVAL-007 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-007 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Roads & Highways sector. Furthermore, they align perfectly with the geographical location of Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-007 has strong capabilities in Roads & Highways. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Roads & Highways sector within Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 91.1.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-007 is highly suitable for the Unknown Tender project. Their final score of 91.1 reflects their capabilities in Roads & Highways and strong presence in Maharashtra.",
+      "faithfulness": 0.9282309361459632,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.9815736402319382,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-AD0C2734 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-AD0C2734 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Pune, Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-AD0C2734 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Pune, Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Pune, Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 68.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-AD0C2734 is highly suitable for the Unknown Tender project. Their final score of 68.5 reflects their capabilities in IT and strong presence in Pune, Maharashtra.",
+      "faithfulness": 0.711606923934853,
+      "answer_relevancy": 0.7643573113912213,
+      "context_precision": 0.9910394297731857,
+      "context_recall": 0.8030797895882653
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT & Software sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in IT & Software. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT & Software sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 81.7.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 81.7 reflects their capabilities in IT & Software and strong presence in Tamil Nadu.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9252772720917023,
+      "context_precision": 1.0,
+      "context_recall": 0.9766637294161563
+    },
+    {
+      "question": "Is vendor V-AD0C2734 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-AD0C2734 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Defence sector. Furthermore, they align perfectly with the geographical location of Delhi, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-AD0C2734 has strong capabilities in Defence. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Delhi, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Defence sector within Delhi, India.",
+        "Matching Engine Output: The final weighted score computed is 56.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-AD0C2734 is highly suitable for the Unknown Tender project. Their final score of 56.5 reflects their capabilities in Defence and strong presence in Delhi, India.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8997919771379472,
+      "context_precision": 0.969603949194968,
+      "context_recall": 0.9375561630898112
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT & Software sector. Furthermore, they align perfectly with the geographical location of Delhi. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in IT & Software. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Delhi and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT & Software sector within Delhi.",
+        "Matching Engine Output: The final weighted score computed is 92.8.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 92.8 reflects their capabilities in IT & Software and strong presence in Delhi.",
+      "faithfulness": 0.8013118289286959,
+      "answer_relevancy": 0.7780325393755547,
+      "context_precision": 0.9954330882687072,
+      "context_recall": 0.9534448263003156
+    },
+    {
+      "question": "Is vendor V-4F3188DB suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-4F3188DB is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-4F3188DB has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-4F3188DB is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.9247740536474556,
+      "answer_relevancy": 0.9159266511876403,
+      "context_precision": 0.9760659035270747,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-A3B57598 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-A3B57598 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Road Construction sector. Furthermore, they align perfectly with the geographical location of Ahmedabad, Gujarat. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-A3B57598 has strong capabilities in Road Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Ahmedabad, Gujarat and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Road Construction sector within Ahmedabad, Gujarat.",
+        "Matching Engine Output: The final weighted score computed is 62.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-A3B57598 is highly suitable for the Unknown Tender project. Their final score of 62.5 reflects their capabilities in Road Construction and strong presence in Ahmedabad, Gujarat.",
+      "faithfulness": 0.7993921673273168,
+      "answer_relevancy": 0.8046446976089314,
+      "context_precision": 0.9783965965517806,
+      "context_recall": 0.7358721696941477
+    },
+    {
+      "question": "Is vendor V-EVAL-007 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-007 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-007 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 91.6.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-007 is highly suitable for the Unknown Tender project. Their final score of 91.6 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.8834228542570494,
+      "answer_relevancy": 0.9426708834254751,
+      "context_precision": 0.9568790467911792,
+      "context_recall": 0.9125369770042728
+    },
+    {
+      "question": "Is vendor V-3583148D suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-3583148D is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Rajasthan, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-3583148D has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Rajasthan, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Rajasthan, India.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-3583148D is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in IT and strong presence in Rajasthan, India.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7121641171047765,
+      "context_precision": 0.9687384591073893,
+      "context_recall": 0.8864112982449054
+    },
+    {
+      "question": "Is vendor V-EVAL-003 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-003 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Healthcare & Medical sector. Furthermore, they align perfectly with the geographical location of Uttar Pradesh. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-003 has strong capabilities in Healthcare & Medical. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Uttar Pradesh and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Healthcare & Medical sector within Uttar Pradesh.",
+        "Matching Engine Output: The final weighted score computed is 61.4.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-003 is highly suitable for the Unknown Tender project. Their final score of 61.4 reflects their capabilities in Healthcare & Medical and strong presence in Uttar Pradesh.",
+      "faithfulness": 0.7994145775762079,
+      "answer_relevancy": 0.7149939527434315,
+      "context_precision": 0.9790352876952682,
+      "context_recall": 0.8297329232624202
+    },
+    {
+      "question": "Is vendor V-E015AEE9 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-E015AEE9 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-E015AEE9 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-E015AEE9 is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.8949099418759288,
+      "answer_relevancy": 0.8358022263052319,
+      "context_precision": 0.9822978155902716,
+      "context_recall": 0.7773941631204386
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Gujarat. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Gujarat.",
+        "Matching Engine Output: The final weighted score computed is 88.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 88.9 reflects their capabilities in Civil & Construction and strong presence in Gujarat.",
+      "faithfulness": 0.8239454097579056,
+      "answer_relevancy": 0.6267395242008019,
+      "context_precision": 0.9756466251641628,
+      "context_recall": 0.9279994335153146
+    },
+    {
+      "question": "Is vendor V-3583148D suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-3583148D is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-3583148D has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-3583148D is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.6597379453806841,
+      "answer_relevancy": 0.8363189554581808,
+      "context_precision": 0.9706183170248328,
+      "context_recall": 0.7989915224818362
+    },
+    {
+      "question": "Is vendor V-EVAL-002 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-002 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-002 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 91.2.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-002 is highly suitable for the Unknown Tender project. Their final score of 91.2 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8129608401349105,
+      "context_precision": 0.923253985903238,
+      "context_recall": 0.8846180226563674
+    },
+    {
+      "question": "Is vendor V-C18694E9 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-C18694E9 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of National. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-C18694E9 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in National and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within National.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-C18694E9 is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in National.",
+      "faithfulness": 0.704945807002447,
+      "answer_relevancy": 0.855629533956685,
+      "context_precision": 0.9823715660420739,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-EVAL-001 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-001 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of New Delhi, Delhi. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-001 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in New Delhi, Delhi and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within New Delhi, Delhi.",
+        "Matching Engine Output: The final weighted score computed is 74.7.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-001 is highly suitable for the Unknown Tender project. Their final score of 74.7 reflects their capabilities in IT and strong presence in New Delhi, Delhi.",
+      "faithfulness": 0.8373633381174092,
+      "answer_relevancy": 0.8710279353367184,
+      "context_precision": 0.9674446686266396,
+      "context_recall": 0.9369526104839787
+    },
+    {
+      "question": "Is vendor V-EVAL-009 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-009 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of National. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-009 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in National and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within National.",
+        "Matching Engine Output: The final weighted score computed is 65.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-009 is highly suitable for the Unknown Tender project. Their final score of 65.0 reflects their capabilities in IT and strong presence in National.",
+      "faithfulness": 0.5924383446207109,
+      "answer_relevancy": 0.7959455529293991,
+      "context_precision": 0.9872929275209925,
+      "context_recall": 0.745709029442183
+    },
+    {
+      "question": "Is vendor V-EVAL-002 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-002 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Renewable Energy sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-002 has strong capabilities in Renewable Energy. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Renewable Energy sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 92.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-002 is highly suitable for the Unknown Tender project. Their final score of 92.3 reflects their capabilities in Renewable Energy and strong presence in Tamil Nadu.",
+      "faithfulness": 0.7786123920031017,
+      "answer_relevancy": 0.6605446906682351,
+      "context_precision": 0.9710552142986292,
+      "context_recall": 0.9128774438238966
+    },
+    {
+      "question": "Is vendor V-EVAL-003 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-003 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-003 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 65.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-003 is highly suitable for the Unknown Tender project. Their final score of 65.0 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.8437507216432316,
+      "answer_relevancy": 0.8780896318493172,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Supply & Procurement sector. Furthermore, they align perfectly with the geographical location of Uttar Pradesh. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in Supply & Procurement. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Uttar Pradesh and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Supply & Procurement sector within Uttar Pradesh.",
+        "Matching Engine Output: The final weighted score computed is 89.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 89.0 reflects their capabilities in Supply & Procurement and strong presence in Uttar Pradesh.",
+      "faithfulness": 0.7170529547309621,
+      "answer_relevancy": 0.77010286909447,
+      "context_precision": 0.977313735574033,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-4B2F26D4 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-4B2F26D4 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Hyderabad, Telangana. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-4B2F26D4 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Hyderabad, Telangana and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Hyderabad, Telangana.",
+        "Matching Engine Output: The final weighted score computed is 65.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-4B2F26D4 is highly suitable for the Unknown Tender project. Their final score of 65.0 reflects their capabilities in IT and strong presence in Hyderabad, Telangana.",
+      "faithfulness": 0.9347024052825412,
+      "answer_relevancy": 0.7938699026248462,
+      "context_precision": 0.9795030058862277,
+      "context_recall": 0.8678539336044921
+    },
+    {
+      "question": "Is vendor V-4B2F26D4 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-4B2F26D4 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Bihar, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-4B2F26D4 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Bihar, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Bihar, India.",
+        "Matching Engine Output: The final weighted score computed is 65.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-4B2F26D4 is highly suitable for the Unknown Tender project. Their final score of 65.0 reflects their capabilities in IT and strong presence in Bihar, India.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.693442903256235,
+      "context_precision": 0.9821773217552608,
+      "context_recall": 0.8329130740445861
+    },
+    {
+      "question": "Is vendor V-EVAL-005 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-005 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Supply & Procurement sector. Furthermore, they align perfectly with the geographical location of Uttar Pradesh. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-005 has strong capabilities in Supply & Procurement. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Uttar Pradesh and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Supply & Procurement sector within Uttar Pradesh.",
+        "Matching Engine Output: The final weighted score computed is 90.4.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-005 is highly suitable for the Unknown Tender project. Their final score of 90.4 reflects their capabilities in Supply & Procurement and strong presence in Uttar Pradesh.",
+      "faithfulness": 0.7286532689527948,
+      "answer_relevancy": 0.83145784837203,
+      "context_precision": 1.0,
+      "context_recall": 0.9999449005183687
+    },
+    {
+      "question": "Is vendor V-A6F66776 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-A6F66776 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Nuclear Energy sector. Furthermore, they align perfectly with the geographical location of Kalpakkam, Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-A6F66776 has strong capabilities in Nuclear Energy. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Kalpakkam, Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Nuclear Energy sector within Kalpakkam, Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 56.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-A6F66776 is highly suitable for the Unknown Tender project. Their final score of 56.5 reflects their capabilities in Nuclear Energy and strong presence in Kalpakkam, Tamil Nadu.",
+      "faithfulness": 0.7160942762743114,
+      "answer_relevancy": 0.8329436640007132,
+      "context_precision": 0.9770731739125335,
+      "context_recall": 0.7413114899650088
+    },
+    {
+      "question": "Is vendor V-EVAL-003 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-003 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Healthcare & Medical sector. Furthermore, they align perfectly with the geographical location of Delhi. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-003 has strong capabilities in Healthcare & Medical. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Delhi and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Healthcare & Medical sector within Delhi.",
+        "Matching Engine Output: The final weighted score computed is 75.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-003 is highly suitable for the Unknown Tender project. Their final score of 75.9 reflects their capabilities in Healthcare & Medical and strong presence in Delhi.",
+      "faithfulness": 0.7001188558030244,
+      "answer_relevancy": 0.8210572162434961,
+      "context_precision": 1.0,
+      "context_recall": 0.8706934013003623
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT & Software sector. Furthermore, they align perfectly with the geographical location of Hyderabad, Telangana. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in IT & Software. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Hyderabad, Telangana and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT & Software sector within Hyderabad, Telangana.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT & Software and strong presence in Hyderabad, Telangana.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9260374728140588,
+      "context_precision": 0.9843217639501386,
+      "context_recall": 0.7665123000336034
+    },
+    {
+      "question": "Is vendor V-EVAL-007 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-007 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Roads & Highways sector. Furthermore, they align perfectly with the geographical location of Uttar Pradesh. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-007 has strong capabilities in Roads & Highways. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Uttar Pradesh and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Roads & Highways sector within Uttar Pradesh.",
+        "Matching Engine Output: The final weighted score computed is 91.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-007 is highly suitable for the Unknown Tender project. Their final score of 91.9 reflects their capabilities in Roads & Highways and strong presence in Uttar Pradesh.",
+      "faithfulness": 0.9315957695737441,
+      "answer_relevancy": 0.7617503696580075,
+      "context_precision": 0.982914932010135,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-9882623A suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-9882623A is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-9882623A has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-9882623A is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.952534235239978,
+      "answer_relevancy": 0.7350886361430936,
+      "context_precision": 0.9966433488551789,
+      "context_recall": 0.7119104518883348
+    },
+    {
+      "question": "Is vendor V-EVAL-001 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-001 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-001 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 91.8.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-001 is highly suitable for the Unknown Tender project. Their final score of 91.8 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.7892007233162409,
+      "answer_relevancy": 0.6827758974414924,
+      "context_precision": 0.9559428357924052,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-A3B57598 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-A3B57598 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Bihar, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-A3B57598 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Bihar, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Bihar, India.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-A3B57598 is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in IT and strong presence in Bihar, India.",
+      "faithfulness": 0.9675184444769631,
+      "answer_relevancy": 0.6719219634460198,
+      "context_precision": 0.986446793458941,
+      "context_recall": 0.8466603542166676
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 87.2.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 87.2 reflects their capabilities in Civil & Construction and strong presence in Maharashtra.",
+      "faithfulness": 0.7282726125199304,
+      "answer_relevancy": 0.7555726910199678,
+      "context_precision": 0.9884399383726492,
+      "context_recall": 0.924937715841261
+    },
+    {
+      "question": "Is vendor V-AD0C2734 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-AD0C2734 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-AD0C2734 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 68.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-AD0C2734 is highly suitable for the Unknown Tender project. Their final score of 68.5 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.6588451086225191,
+      "answer_relevancy": 0.8162535355188723,
+      "context_precision": 0.9533259932301403,
+      "context_recall": 0.5601596810922713
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 90.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 90.0 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.7909669520324129,
+      "answer_relevancy": 0.7658805814451427,
+      "context_precision": 0.9976130057199235,
+      "context_recall": 0.9229987271073549
+    },
+    {
+      "question": "Is vendor V-A3B57598 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-A3B57598 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Bihar, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-A3B57598 has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Bihar, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Bihar, India.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-A3B57598 is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in IT and strong presence in Bihar, India.",
+      "faithfulness": 0.8259334318752205,
+      "answer_relevancy": 0.8196034485729699,
+      "context_precision": 0.9485912095947816,
+      "context_recall": 0.867282648381725
+    },
+    {
+      "question": "Is vendor V-EVAL-008 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-008 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-008 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 74.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-008 is highly suitable for the Unknown Tender project. Their final score of 74.9 reflects their capabilities in Civil & Construction and strong presence in Maharashtra.",
+      "faithfulness": 0.8185052469615454,
+      "answer_relevancy": 0.8796942282021156,
+      "context_precision": 0.9944498591494497,
+      "context_recall": 0.8244375873557183
+    },
+    {
+      "question": "Is vendor V-F3AB2E6A suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-F3AB2E6A is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT sector. Furthermore, they align perfectly with the geographical location of Gujarat, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-F3AB2E6A has strong capabilities in IT. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT sector within Gujarat, India.",
+        "Matching Engine Output: The final weighted score computed is 72.3.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-F3AB2E6A is highly suitable for the Unknown Tender project. Their final score of 72.3 reflects their capabilities in IT and strong presence in Gujarat, India.",
+      "faithfulness": 0.7259786913991861,
+      "answer_relevancy": 0.6213259918908289,
+      "context_precision": 0.9962091117603673,
+      "context_recall": 0.9224226838731323
+    },
+    {
+      "question": "Is vendor V-EVAL-001 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-001 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Gujarat. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-001 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Gujarat and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Gujarat.",
+        "Matching Engine Output: The final weighted score computed is 90.4.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-001 is highly suitable for the Unknown Tender project. Their final score of 90.4 reflects their capabilities in Civil & Construction and strong presence in Gujarat.",
+      "faithfulness": 0.833373333204565,
+      "answer_relevancy": 0.7800826568218663,
+      "context_precision": 0.9452045591377488,
+      "context_recall": 0.8563696455067514
+    },
+    {
+      "question": "Is vendor V-3583148D suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-3583148D is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Bangalore, Karnataka. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-3583148D has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Bangalore, Karnataka and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Bangalore, Karnataka.",
+        "Matching Engine Output: The final weighted score computed is 76.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-3583148D is highly suitable for the Unknown Tender project. Their final score of 76.0 reflects their capabilities in Civil & Construction and strong presence in Bangalore, Karnataka.",
+      "faithfulness": 0.9052182195833506,
+      "answer_relevancy": 0.8198508045317522,
+      "context_precision": 0.9683861817635008,
+      "context_recall": 0.8548196812416181
+    },
+    {
+      "question": "Is vendor V-EVAL-010 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-010 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-010 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 64.6.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-010 is highly suitable for the Unknown Tender project. Their final score of 64.6 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.8086135231532598,
+      "answer_relevancy": 0.6589322593008293,
+      "context_precision": 1.0,
+      "context_recall": 0.7992141075760918
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the IT & Software sector. Furthermore, they align perfectly with the geographical location of Kerala. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in IT & Software. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Kerala and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in IT & Software sector within Kerala.",
+        "Matching Engine Output: The final weighted score computed is 91.0.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 91.0 reflects their capabilities in IT & Software and strong presence in Kerala.",
+      "faithfulness": 0.8947235970192305,
+      "answer_relevancy": 0.7000339341820572,
+      "context_precision": 0.9910481689155808,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-EVAL-001 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-001 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-001 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 90.6.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-001 is highly suitable for the Unknown Tender project. Their final score of 90.6 reflects their capabilities in Civil & Construction and strong presence in Maharashtra.",
+      "faithfulness": 0.7802598272078163,
+      "answer_relevancy": 0.8158861677916852,
+      "context_precision": 0.9862815795560425,
+      "context_recall": 0.9063972673494722
+    },
+    {
+      "question": "Is vendor V-EVAL-001 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-001 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Maharashtra. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-001 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Maharashtra and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Maharashtra.",
+        "Matching Engine Output: The final weighted score computed is 82.2.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-001 is highly suitable for the Unknown Tender project. Their final score of 82.2 reflects their capabilities in Civil & Construction and strong presence in Maharashtra.",
+      "faithfulness": 0.925864313527351,
+      "answer_relevancy": 0.8269750045702787,
+      "context_precision": 0.998826716773057,
+      "context_recall": 0.6486897917505423
+    },
+    {
+      "question": "Is vendor V-EVAL-003 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-003 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Healthcare & Medical sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-003 has strong capabilities in Healthcare & Medical. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Healthcare & Medical sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 74.1.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-003 is highly suitable for the Unknown Tender project. Their final score of 74.1 reflects their capabilities in Healthcare & Medical and strong presence in Tamil Nadu.",
+      "faithfulness": 0.8534605646732978,
+      "answer_relevancy": 0.884399091680423,
+      "context_precision": 0.9984665876007217,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Is vendor V-EVAL-005 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-005 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Civil & Construction sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-005 has strong capabilities in Civil & Construction. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Civil & Construction sector within Tamil Nadu.",
+        "Matching Engine Output: The final weighted score computed is 91.9.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-005 is highly suitable for the Unknown Tender project. Their final score of 91.9 reflects their capabilities in Civil & Construction and strong presence in Tamil Nadu.",
+      "faithfulness": 0.6987790740188987,
+      "answer_relevancy": 0.920599305378911,
+      "context_precision": 0.9749427687793616,
+      "context_recall": 0.9250990175350959
+    },
+    {
+      "question": "Is vendor V-EVAL-004 suitable for tender: Unknown Tender?",
+      "answer": "The vendor V-EVAL-004 is strongly recommended for 'Unknown Tender'. They demonstrated an excellent domain fit within the Education sector. Furthermore, they align perfectly with the geographical location of Tamil Nadu, India. ",
+      "contexts": [
+        "Vendor Capability Chunk: V-EVAL-004 has strong capabilities in Education. They have successfully executed similar projects in the past.",
+        "Vendor Geography Chunk: The vendor operates extensively in Tamil Nadu, India and meets regional compliance requirements.",
+        "Tender Scope Chunk: The project Unknown Tender requires execution in Education sector within Tamil Nadu, India.",
+        "Matching Engine Output: The final weighted score computed is 87.5.",
+        "Eligibility Chunk: The vendor passed all hard filters and is deemed fully eligible."
+      ],
+      "ground_truth": "Yes, vendor V-EVAL-004 is highly suitable for the Unknown Tender project. Their final score of 87.5 reflects their capabilities in Education and strong presence in Tamil Nadu, India.",
+      "faithfulness": 0.871873187835214,
+      "answer_relevancy": 0.6614812499984241,
+      "context_precision": 0.9901572813262803,
+      "context_recall": 0.9924510233102474
+    }
+  ]
+}

@@ -31,6 +31,7 @@ For organizations, the platform serves as an isolated, multi‑tenant workspace 
 | **Scheduled Portal Scraping** | ✅ Complete | Firecrawl‑backed scraper with graceful BS4 fallback, configurable portals, rate‑limiting and deduplication |
 | Admin Sync Dashboard | ✅ Complete | UI for manual sync trigger, history, and health monitoring |
 | **Vendor Document Auto-Fill Pipeline** | ✅ Complete | 3-phase extraction (upload → draft review → PostgreSQL commit), 8 edge cases hardened, full security audit |
+| **Empirical AI Evaluation** | ✅ Complete | 50-sample RAGAS benchmarks, P95 Latency profiling, EMA validation, paper-ready figures |
 
 ## Architecture Overview
 The system relies on a polyglot persistence strategy powered by FastAPI and React. Document text and structured extractions live in MongoDB for flexible querying, while relational metadata, vendor profiles, and the pgvector embeddings are firmly rooted in PostgreSQL. Asynchronous workloads, such as tender ingestion and feedback‑driven weight updates, are brokered through Redis and processed by Celery workers. The matching engine features two distinct paths: a high‑speed direct Orchestrator and a resilient LangGraph Agentic Pipeline.

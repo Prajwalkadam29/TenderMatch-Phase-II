@@ -1,0 +1,579 @@
+{
+    "tenders": [
+        {
+            "tender_id": "",
+            "mongo_id": "6a04b0029df342f5cbe9f6a4"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a04b0119df342f5cbe9f6a5"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a04b0119df342f5cbe9f6a6"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a04b0119df342f5cbe9f6a7"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a04b0119df342f5cbe9f6a8"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a0506c438950d02179dba93"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a05089d38950d02179dba94"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a0508ee38950d02179dba95"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a0509f9c53fba354a58d9dd"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a050b69dc81864f2d962792"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a050cc2dc81864f2d962793"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a050f4fc4418cd8f6aac9aa"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a050fc83a7c853b22467cb7"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510333a7c853b22467cb8"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510333a7c853b22467cb9"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510333a7c853b22467cba"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510333a7c853b22467cbb"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510813a7c853b22467cbc"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510813a7c853b22467cbd"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510813a7c853b22467cbe"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510813a7c853b22467cbf"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0510813a7c853b22467cc0"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a051e923a7c853b22467cc1"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a051e933a7c853b22467cc2"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a051e933a7c853b22467cc3"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a051e933a7c853b22467cc4"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a051e933a7c853b22467cc5"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a052ca23a7c853b22467cc6"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a052ca33a7c853b22467cc7"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a052ca33a7c853b22467cc8"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a052ca33a7c853b22467cc9"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a052ca33a7c853b22467cca"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a053ab3d59391f53402ab59"
+        },
+        {
+            "tender_id": "VITPune",
+            "mongo_id": "6a05435088f0fd70218025ad"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0548c1f07863d8dc02ab59"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0548c1f07863d8dc02ab5a"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0548c2f07863d8dc02ab5b"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0548c2f07863d8dc02ab5c"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0548c2f07863d8dc02ab5d"
+        },
+        {
+            "tender_id": "4e624f",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4a"
+        },
+        {
+            "tender_id": "42c2ce",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4b"
+        },
+        {
+            "tender_id": "15c477",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4c"
+        },
+        {
+            "tender_id": "20d6e4",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4d"
+        },
+        {
+            "tender_id": "e297bd",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4e"
+        },
+        {
+            "tender_id": "86e717",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab4f"
+        },
+        {
+            "tender_id": "d640e4",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab50"
+        },
+        {
+            "tender_id": "401ea5",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab51"
+        },
+        {
+            "tender_id": "ddc51c",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab52"
+        },
+        {
+            "tender_id": "7fe382",
+            "mongo_id": "6a0548cf3dbe7a5747a6ab53"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054ef11e61aa2978871a45"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4beca"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4becb"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4becc"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4becd"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4bece"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a054f03bf41b01990b4becf"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a059d2639539494fa238a9a"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a067e39ba9da72a09238a9a"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a067e75ba9da72a09238a9b"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a067e75ba9da72a09238a9c"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a067e75ba9da72a09238a9d"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a067e75ba9da72a09238a9e"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0834216e34ab0f7e0a491d"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a084021ca4fa452f3beea45"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a084e32ca4fa452f3beea46"
+        },
+        {
+            "tender_id": "92%",
+            "mongo_id": "6a086470e4ef656f2e1f7aed"
+        },
+        {
+            "tender_id": "80%",
+            "mongo_id": "6a086470e4ef656f2e1f7aee"
+        },
+        {
+            "tender_id": "72%",
+            "mongo_id": "6a086470e4ef656f2e1f7aef"
+        },
+        {
+            "tender_id": "50%",
+            "mongo_id": "6a086470e4ef656f2e1f7af0"
+        },
+        {
+            "tender_id": "32%",
+            "mongo_id": "6a086470e4ef656f2e1f7af1"
+        },
+        {
+            "tender_id": "10%",
+            "mongo_id": "6a086470e4ef656f2e1f7af2"
+        },
+        {
+            "tender_id": "0%",
+            "mongo_id": "6a086470e4ef656f2e1f7af3"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a086a521b6e91c936cda900"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0878631b6e91c936cda901"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a089ef31b6e91c936cda902"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a08a2931b6e91c936cda903"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a08b0a41b6e91c936cda904"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a08beb21b6e91c936cda905"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a08e1eb1b6e91c936cda906"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a092bb51b6e91c936cda907"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a092f311b6e91c936cda908"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a093d431b6e91c936cda909"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a094b511b6e91c936cda90a"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0959621b6e91c936cda90b"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0df6547a490dd1bbd8074a"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0df6a27a490dd1bbd8074b"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e04b3820bf0c81b1a2e8b"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e20d3820bf0c81b1a2e8c"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e2ee2820bf0c81b1a2e8d"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e3cf2820bf0c81b1a2e8e"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e4b02820bf0c81b1a2e8f"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e5912820bf0c81b1a2e90"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e6721820bf0c81b1a2e91"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e7532820bf0c81b1a2e92"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0e8343820bf0c81b1a2e93"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0eb0fc820bf0c81b1a2e94"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0ebb81820bf0c81b1a2e95"
+        },
+        {
+            "tender_id": "",
+            "mongo_id": "6a0ec991820bf0c81b1a2e96"
+        },
+        {
+            "tender_id": "TM-EVAL-CIVIL-001",
+            "mongo_id": "6a0ed2e6f26515d9291dd150"
+        },
+        {
+            "tender_id": "TM-EVAL-CIVIL-002",
+            "mongo_id": "6a0ed2e6f26515d9291dd151"
+        }
+    ],
+    "vendor_profiles": [
+        {
+            "vendor_id": "V-4F3188DB",
+            "profile_id": "039d255d-84ae-4238-b0ea-18a762399339"
+        },
+        {
+            "vendor_id": "V-798FAB32",
+            "profile_id": "ede3e7aa-024f-4a71-9ef9-66a5444a62fc"
+        },
+        {
+            "vendor_id": "V-A3B57598",
+            "profile_id": "f303082b-b08e-4914-bed7-597775c8a185"
+        },
+        {
+            "vendor_id": "V-EADF12D1",
+            "profile_id": "90e2bbef-d16b-489c-80d8-1c017a0221ff"
+        },
+        {
+            "vendor_id": "V-9B325477",
+            "profile_id": "18b14f2b-7196-416c-bf03-6d82ad01c9a5"
+        },
+        {
+            "vendor_id": "V-A6F66776",
+            "profile_id": "23622b7a-8763-4002-af90-ce511315f2fc"
+        },
+        {
+            "vendor_id": "V-3D251386",
+            "profile_id": "1758beb2-a9c1-4e33-b268-cd8de44eef84"
+        },
+        {
+            "vendor_id": "V-E82B236A",
+            "profile_id": "291fb1c0-ad69-4b2a-9ebe-c6ea9e78a830"
+        },
+        {
+            "vendor_id": "V-43177AD7",
+            "profile_id": "30a383f1-3eff-4e48-ade3-58c917bb4116"
+        },
+        {
+            "vendor_id": "V-B3C480CC",
+            "profile_id": "50f0c180-b884-407d-a589-dad898d2b543"
+        },
+        {
+            "vendor_id": "V-984FCC55",
+            "profile_id": "07876455-c9ca-47c6-ac94-ce45a5aa28a4"
+        },
+        {
+            "vendor_id": "V-3583148D",
+            "profile_id": "58adab48-43a3-4d20-859c-1464c6e59111"
+        },
+        {
+            "vendor_id": "V-18D45DDE",
+            "profile_id": "ca961579-c2fa-42bf-a201-031f33e8e3ae"
+        },
+        {
+            "vendor_id": "V-3B7F311D",
+            "profile_id": "66920f24-07e8-45ec-a514-e2bbb1339dd4"
+        },
+        {
+            "vendor_id": "V-AD0C2734",
+            "profile_id": "fa5219cc-1e7b-4fc9-a045-4d0defd4ead4"
+        },
+        {
+            "vendor_id": "V-C7CC58E0",
+            "profile_id": "e1a85bb7-d3aa-4c3a-b87b-ed8a184b9e15"
+        },
+        {
+            "vendor_id": "V-FB6276AA",
+            "profile_id": "b69de423-162f-4a11-84ed-35d9666bdbe3"
+        },
+        {
+            "vendor_id": "V-5D7B625B",
+            "profile_id": "30996774-7238-4686-b807-88d2a9416bd6"
+        },
+        {
+            "vendor_id": "V-C18694E9",
+            "profile_id": "b13ff398-9520-4105-a4ce-0d23147749b6"
+        },
+        {
+            "vendor_id": "V-E015AEE9",
+            "profile_id": "2ce6c355-185d-44e4-a005-845544b39001"
+        },
+        {
+            "vendor_id": "V-C403BDB1",
+            "profile_id": "7d0d4302-1b7d-48dc-814c-d281f650c8e0"
+        },
+        {
+            "vendor_id": "V-4C119607",
+            "profile_id": "f57427a6-c409-4b61-bdcd-a38bd6a75201"
+        },
+        {
+            "vendor_id": "V-736B9F03",
+            "profile_id": "c3f83cb3-9f2d-4b41-9b99-0e0691f9fa9c"
+        },
+        {
+            "vendor_id": "V-EVAL-004",
+            "profile_id": "6438d57e-9cfb-463b-9c77-d8a2d1138c2e"
+        },
+        {
+            "vendor_id": "V-EVAL-007",
+            "profile_id": "a6ddfe4b-51a0-4c6a-b986-f2ce10bd2ddb"
+        },
+        {
+            "vendor_id": "V-EVAL-005",
+            "profile_id": "4d92624a-51a7-4696-8493-aa5978ca345b"
+        },
+        {
+            "vendor_id": "V-EVAL-002",
+            "profile_id": "6981dc80-212d-4691-8d74-1e8a4159b098"
+        },
+        {
+            "vendor_id": "V-EVAL-001",
+            "profile_id": "e2c7a93f-8c9d-400d-8a0e-34b669e3e37b"
+        },
+        {
+            "vendor_id": "V-EVAL-006",
+            "profile_id": "0e764076-f66a-40fc-bd2e-67637686b383"
+        },
+        {
+            "vendor_id": "V-EVAL-008",
+            "profile_id": "53063912-6be0-4828-91ca-f3b6b87fd70f"
+        },
+        {
+            "vendor_id": "V-EVAL-009",
+            "profile_id": "a18176de-e850-496a-b356-e1f8ad6a9585"
+        },
+        {
+            "vendor_id": "V-EVAL-010",
+            "profile_id": "d436d628-a589-4ca5-8996-b685f8174592"
+        },
+        {
+            "vendor_id": "V-EVAL-003",
+            "profile_id": "eac7b593-75b3-4161-805f-2af668c7a4ef"
+        },
+        {
+            "vendor_id": "V-E72763C8",
+            "profile_id": "bf4c5978-d745-4bbf-a1f4-31d831b7fdd3"
+        },
+        {
+            "vendor_id": "V-C143909E",
+            "profile_id": "fb9eaecc-ac7a-4998-97a1-a3c0c898dc5c"
+        },
+        {
+            "vendor_id": "V-624E7EAB",
+            "profile_id": "8e6d68ef-e70d-4ca7-bb86-a1b0ca19cc13"
+        },
+        {
+            "vendor_id": "V-D8065E18",
+            "profile_id": "ffba9d2d-db10-46e1-b1be-64b18e36e44c"
+        },
+        {
+            "vendor_id": "V-F3AB2E6A",
+            "profile_id": "a584c9f8-ea46-473a-8769-36de76c4fe19"
+        },
+        {
+            "vendor_id": "V-4B2F26D4",
+            "profile_id": "d864489e-a9d7-4b6a-95bc-0513db08808c"
+        },
+        {
+            "vendor_id": "V-80D00769",
+            "profile_id": "d4a5663a-f386-4ba9-8ff2-3f72da1d33df"
+        },
+        {
+            "vendor_id": "V-263B4927",
+            "profile_id": "2e6f9f01-39a1-4f2a-a1df-9759e992beb5"
+        },
+        {
+            "vendor_id": "V-8FB58AAD",
+            "profile_id": "a400e6b2-d3e5-4be3-8258-cecd5eb794d2"
+        },
+        {
+            "vendor_id": "V-9882623A",
+            "profile_id": "ef17111c-91ba-47ad-8c7a-6d847074a4c6"
+        }
+    ],
+    "access_token": "dummy"
+}

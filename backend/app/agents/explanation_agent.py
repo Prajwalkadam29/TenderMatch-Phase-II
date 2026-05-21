@@ -68,10 +68,12 @@ async def explanation_agent(state: TenderMatchState) -> dict:
 
     match_id = f"MR-{vendor_id}-{tender_mongo_id[:8]}"
     matched_at = datetime.now(timezone.utc).isoformat()
-
+    plan = state.get("execution_plan") or {}
+    
     final_match_result = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
+        "schema_url": "http://json-schema.org/draft-07/schema#",
         "version": "3.0.0",
+        "planner_decision": plan,
         "match_result": {
             "_meta": {
                 "match_id": match_id,
@@ -83,6 +85,7 @@ async def explanation_agent(state: TenderMatchState) -> dict:
                 "semantic_score": round(semantic_score, 4),
                 "extraction_confidence": extraction_confidence,
                 "pipeline": "langgraph",
+                "retrieval_strategy": plan.get("retrieval_strategy", "hybrid"),
             },
             "hard_filter_results": {
                 "overall_pass": filter_result.get("overall_pass", False),

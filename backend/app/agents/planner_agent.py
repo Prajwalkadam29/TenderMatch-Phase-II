@@ -33,7 +33,24 @@ async def planner_agent(state: TenderMatchState) -> dict:
     # If this is the absolute first node, we might not have full vendor_data yet,
     # but the API endpoint might have injected hints into the state, or we default to 50.
     vendor_data = state.get("vendor_profile_data", {})
-    completeness = vendor_data.get("profile_completeness_pct", 50.0) 
+    completeness = vendor_data.get("profile_completeness_pct")
+    
+    if completeness is None:
+        from app.core.postgres import get_pg_session
+        from app.db.models.document import VendorProfile
+        from sqlalchemy import select
+        try:
+            async with get_pg_session() as session:
+                stmt = select(VendorProfile.profile_completeness_pct).where(VendorProfile.id == vendor_profile_id)
+                res = await session.execute(stmt)
+                fetched = res.scalar_one_or_none()
+                if fetched is not None:
+                    completeness = float(fetched)
+        except Exception as e:
+            logger.error("[Agent:Planner] Failed to fetch completeness: %s", e)
+            
+    if completeness is None:
+        completeness = 50.0
     
     # We might know if it's a rerun from state flags
     is_rerun = state.get("is_rerun", False)

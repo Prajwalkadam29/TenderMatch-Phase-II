@@ -106,9 +106,12 @@ async def ingestion_agent(state: TenderMatchState) -> dict:
             "current_stage": "ingestion_failed",
         }
 
+    if "_id" in tender_doc:
+        tender_doc["_id"] = str(tender_doc["_id"])
+
     tender_embedding = None
     if pg_tender and pg_tender.embedding is not None:
-        tender_embedding = list(pg_tender.embedding)
+        tender_embedding = [float(x) for x in pg_tender.embedding]
 
     logger.info(
         "[Agent:Ingestion] ✓ Loaded vendor=%s domain=%s",
@@ -119,7 +122,7 @@ async def ingestion_agent(state: TenderMatchState) -> dict:
     return {
         "current_stage": "ingestion_complete",
         "vendor_profile_data": vendor_orm.profile_data or {},
-        "vendor_embedding": list(vendor_orm.embedding) if vendor_orm.embedding else None,
+        "vendor_embedding": [float(x) for x in vendor_orm.embedding] if vendor_orm.embedding is not None else None,
         "vendor_vendor_id": vendor_orm.vendor_id,
         "vendor_pg_uuid": str(vendor_orm.id),
         "tender_doc": tender_doc,

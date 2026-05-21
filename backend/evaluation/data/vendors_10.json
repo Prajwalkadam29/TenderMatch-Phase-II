@@ -1,0 +1,850 @@
+{
+    "metadata": {
+        "generated_at": "2026-05-21T13:38:42.146386+00:00",
+        "script_version": "1.0.0",
+        "total_vendors": 10
+    },
+    "vendors": [
+        {
+            "vendor_id": "V-EVAL-001",
+            "business_name": "TechBuild Infrastructure Pvt Ltd",
+            "profile_completeness_pct": 95.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "TechBuild Infrastructure Pvt Ltd",
+                    "registration_type": "Pvt Ltd",
+                    "year_of_incorporation": 2012,
+                    "pan_number": "ABCDE1234F",
+                    "gstin_list": [
+                        {
+                            "gstin": "27ABCDE1234F1Z5",
+                            "state_code": "27",
+                            "state_name": "Maharashtra",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": null
+                },
+                "geography": {
+                    "registered_states": [
+                        "Maharashtra"
+                    ],
+                    "operational_states": [
+                        "Maharashtra",
+                        "Gujarat",
+                        "Karnataka",
+                        "Delhi"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Civil & Construction"
+                    ],
+                    "sub_domains": [
+                        "Building Construction",
+                        "Civil Works"
+                    ],
+                    "capability_description_freetext": "Leading infrastructure development company with over a decade of experience."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 450000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 480000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Navi Mumbai Commercial Complex",
+                            "work_type": "Building Construction",
+                            "contract_value_inr": 200000000,
+                            "client_name": "CIDCO",
+                            "client_type": "Government",
+                            "year_of_completion": 2023
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "CPWD empanelment"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-002",
+            "business_name": "SolarTech Renewables LLP",
+            "profile_completeness_pct": 88.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "SolarTech Renewables LLP",
+                    "registration_type": "LLP",
+                    "year_of_incorporation": 2016,
+                    "pan_number": "ABCDE5678F",
+                    "gstin_list": [
+                        {
+                            "gstin": "24ABCDE5678F1Z5",
+                            "state_code": "24",
+                            "state_name": "Gujarat",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": "Medium"
+                },
+                "geography": {
+                    "registered_states": [
+                        "Gujarat"
+                    ],
+                    "operational_states": [
+                        "Gujarat",
+                        "Rajasthan",
+                        "Madhya Pradesh"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Renewable Energy"
+                    ],
+                    "sub_domains": [
+                        "Solar Power",
+                        "Rooftop Solar"
+                    ],
+                    "capability_description_freetext": "Specialist in solar power installations."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 180000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 200000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Gandhinagar Solar Rooftop",
+                            "work_type": "Solar Power",
+                            "contract_value_inr": 80000000,
+                            "client_name": "GUVNL",
+                            "client_type": "Government",
+                            "year_of_completion": 2023
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "MNRE empanelment"
+                        },
+                        {
+                            "license_type": "BIS IS 14286"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-003",
+            "business_name": "MediSupply Solutions Pvt Ltd",
+            "profile_completeness_pct": 72.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "MediSupply Solutions Pvt Ltd",
+                    "registration_type": "Pvt Ltd",
+                    "year_of_incorporation": 2018,
+                    "pan_number": "ABCDE9012F",
+                    "gstin_list": [
+                        {
+                            "gstin": "07ABCDE9012F1Z5",
+                            "state_code": "07",
+                            "state_name": "Delhi",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": "Small"
+                },
+                "geography": {
+                    "registered_states": [
+                        "Delhi"
+                    ],
+                    "operational_states": [
+                        "Delhi",
+                        "Haryana",
+                        "UP"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Healthcare & Medical"
+                    ],
+                    "sub_domains": [
+                        "Medical Equipment",
+                        "Supplies"
+                    ],
+                    "capability_description_freetext": "Provider of quality medical equipment."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 80000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 90000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": []
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 13485"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "CDSCO registration"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-004",
+            "business_name": "DataCore IT Services Pvt Ltd",
+            "profile_completeness_pct": 90.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "DataCore IT Services Pvt Ltd",
+                    "registration_type": "Pvt Ltd",
+                    "year_of_incorporation": 2015,
+                    "pan_number": "ABCDE3456F",
+                    "gstin_list": [
+                        {
+                            "gstin": "29ABCDE3456F1Z5",
+                            "state_code": "29",
+                            "state_name": "Karnataka",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": null
+                },
+                "geography": {
+                    "registered_states": [
+                        "Karnataka"
+                    ],
+                    "operational_states": [
+                        "Karnataka",
+                        "Delhi",
+                        "Maharashtra"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "IT & Software"
+                    ],
+                    "sub_domains": [
+                        "ERP Implementation",
+                        "Cloud Migration"
+                    ],
+                    "capability_description_freetext": "Specialized in delivering robust e-governance solutions."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 220000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 250000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Karnataka e-Governance Portal",
+                            "work_type": "Software Development",
+                            "contract_value_inr": 120000000,
+                            "client_name": "State Govt of Karnataka",
+                            "client_type": "State Government",
+                            "year_of_completion": 2023
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 27001"
+                        },
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "CMMI Level 3"
+                        },
+                        {
+                            "license_type": "GEM registration"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-005",
+            "business_name": "AquaFlow Engineering Ltd",
+            "profile_completeness_pct": 85.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "AquaFlow Engineering Ltd",
+                    "registration_type": "Ltd",
+                    "year_of_incorporation": 2010,
+                    "pan_number": "ABCDE7890F",
+                    "gstin_list": [
+                        {
+                            "gstin": "09ABCDE7890F1Z5",
+                            "state_code": "09",
+                            "state_name": "Uttar Pradesh",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": null
+                },
+                "geography": {
+                    "registered_states": [
+                        "Uttar Pradesh"
+                    ],
+                    "operational_states": [
+                        "UP",
+                        "MP",
+                        "Bihar",
+                        "Jharkhand"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Water & Sanitation"
+                    ],
+                    "sub_domains": [
+                        "Water Treatment",
+                        "Sewage Pipeline"
+                    ],
+                    "capability_description_freetext": "Leading contractor for AMRUT and state water board projects."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 350000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 380000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Lucknow STP Upgrade",
+                            "work_type": "Water Treatment",
+                            "contract_value_inr": 250000000,
+                            "client_name": "UP Jal Nigam",
+                            "client_type": "State Government",
+                            "year_of_completion": 2023
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "BIS"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-006",
+            "business_name": "PowerGrid Electricals Pvt Ltd",
+            "profile_completeness_pct": 45.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "PowerGrid Electricals Pvt Ltd",
+                    "registration_type": "Pvt Ltd",
+                    "year_of_incorporation": 2017,
+                    "pan_number": "ABCDE2468F",
+                    "gstin_list": [
+                        {
+                            "gstin": "33ABCDE2468F1Z5",
+                            "state_code": "33",
+                            "state_name": "Tamil Nadu",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": "Small"
+                },
+                "geography": {
+                    "registered_states": [
+                        "Tamil Nadu"
+                    ],
+                    "operational_states": [
+                        "Tamil Nadu"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Electrical & Instrumentation"
+                    ],
+                    "sub_domains": [
+                        "Substation",
+                        "HT/LT cabling"
+                    ],
+                    "capability_description_freetext": "Electrical contractor with CEA license."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 120000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 120000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": []
+                },
+                "certifications": {
+                    "iso_certifications": [],
+                    "domain_licenses": [
+                        {
+                            "license_type": "CEA license"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-007",
+            "business_name": "Highway Constructors Ltd",
+            "profile_completeness_pct": 92.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "Highway Constructors Ltd",
+                    "registration_type": "Ltd",
+                    "year_of_incorporation": 2005,
+                    "pan_number": "ABCDE1357F",
+                    "gstin_list": [
+                        {
+                            "gstin": "06ABCDE1357F1Z5",
+                            "state_code": "06",
+                            "state_name": "Haryana",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": null
+                },
+                "geography": {
+                    "registered_states": [
+                        "Haryana"
+                    ],
+                    "operational_states": [
+                        "Haryana",
+                        "Punjab",
+                        "Delhi",
+                        "UP",
+                        "Rajasthan"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Roads & Highways"
+                    ],
+                    "sub_domains": [
+                        "4-lane highway expansion"
+                    ],
+                    "capability_description_freetext": "Highly specialized in executing large NHAI and state highway projects."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 850000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 900000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Delhi-Meerut Expressway Package 3",
+                            "work_type": "Expressway paving",
+                            "contract_value_inr": 1200000000,
+                            "client_name": "NHAI",
+                            "client_type": "Central Government",
+                            "year_of_completion": 2022
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "NHAI empanelment"
+                        },
+                        {
+                            "license_type": "IRC compliance"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-008",
+            "business_name": "GreenBuild Multi-Domain Ltd",
+            "profile_completeness_pct": 78.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "GreenBuild Multi-Domain Ltd",
+                    "registration_type": "Ltd",
+                    "year_of_incorporation": 2014,
+                    "pan_number": "ABCDE3692F",
+                    "gstin_list": [
+                        {
+                            "gstin": "32ABCDE3692F1Z5",
+                            "state_code": "32",
+                            "state_name": "Kerala",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": null
+                },
+                "geography": {
+                    "registered_states": [
+                        "Kerala"
+                    ],
+                    "operational_states": [
+                        "Kerala",
+                        "Tamil Nadu",
+                        "Karnataka"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Civil & Construction",
+                        "Renewable Energy"
+                    ],
+                    "sub_domains": [
+                        "Building Construction",
+                        "Solar Power"
+                    ],
+                    "capability_description_freetext": "Unique multi-domain capabilities."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 280000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 300000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Kochi Smart City Green Hub",
+                            "work_type": "Building Construction",
+                            "contract_value_inr": 150000000,
+                            "client_name": "Kochi Smart City",
+                            "client_type": "Government",
+                            "year_of_completion": 2023
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "CPWD empanelment"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-009",
+            "business_name": "StartupTech Solutions",
+            "profile_completeness_pct": 38.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "StartupTech Solutions",
+                    "registration_type": "Pvt Ltd",
+                    "year_of_incorporation": 2022,
+                    "pan_number": "ABCDE1472F",
+                    "gstin_list": [
+                        {
+                            "gstin": "36ABCDE1472F1Z5",
+                            "state_code": "36",
+                            "state_name": "Telangana",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": "Micro"
+                },
+                "geography": {
+                    "registered_states": [
+                        "Telangana"
+                    ],
+                    "operational_states": [
+                        "Telangana"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "IT & Software"
+                    ],
+                    "sub_domains": [
+                        "Software Development"
+                    ],
+                    "capability_description_freetext": "New software development startup."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 12000000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 12000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": []
+                },
+                "certifications": {
+                    "iso_certifications": [],
+                    "domain_licenses": []
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        },
+        {
+            "vendor_id": "V-EVAL-010",
+            "business_name": "Consultancy Partners LLP",
+            "profile_completeness_pct": 65.0,
+            "profile_data": {
+                "identity": {
+                    "company_legal_name": "Consultancy Partners LLP",
+                    "registration_type": "LLP",
+                    "year_of_incorporation": 2011,
+                    "pan_number": "ABCDE2583F",
+                    "gstin_list": [
+                        {
+                            "gstin": "07ABCDE2583F1Z5",
+                            "state_code": "07",
+                            "state_name": "Delhi",
+                            "is_primary": true
+                        }
+                    ],
+                    "msme_category": "Micro"
+                },
+                "geography": {
+                    "registered_states": [
+                        "Delhi"
+                    ],
+                    "operational_states": [
+                        "Delhi",
+                        "Haryana"
+                    ]
+                },
+                "business_domain": {
+                    "primary_domains": [
+                        "Consultancy & Advisory"
+                    ],
+                    "sub_domains": [
+                        "Financial Audit",
+                        "Project Management"
+                    ],
+                    "capability_description_freetext": "Boutique advisory firm providing highly specialized financial services."
+                },
+                "financials": {
+                    "avg_annual_turnover_inr": 8500000,
+                    "turnover_by_year": [
+                        {
+                            "financial_year": "2023-24",
+                            "turnover_inr": 9000000
+                        }
+                    ],
+                    "net_worth_status": "Positive",
+                    "solvency_certificate_available": true
+                },
+                "past_project_experience": {
+                    "projects": [
+                        {
+                            "project_title": "Delhi Jal Board Process Audit",
+                            "work_type": "Financial Audit",
+                            "contract_value_inr": 3000000,
+                            "client_name": "Delhi Jal Board",
+                            "client_type": "Municipal Body",
+                            "year_of_completion": 2022
+                        }
+                    ]
+                },
+                "certifications": {
+                    "iso_certifications": [
+                        {
+                            "standard": "ISO 9001:2015"
+                        }
+                    ],
+                    "domain_licenses": [
+                        {
+                            "license_type": "ICAI membership"
+                        }
+                    ]
+                },
+                "compliance": {
+                    "blacklisted_or_debarred": false
+                },
+                "notification_preferences": {
+                    "email": "test@example.com",
+                    "preferred_channels": [
+                        "email"
+                    ],
+                    "minimum_match_score_threshold": 0.65
+                }
+            }
+        }
+    ]
+}

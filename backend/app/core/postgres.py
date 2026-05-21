@@ -104,7 +104,7 @@ async def get_pg_session() -> AsyncGenerator[AsyncSession, None]:
             await session.execute(...)
     """
     if _session_factory is None:
-        raise RuntimeError("PostgreSQL session factory not initialised.")
+        await init_postgres()
 
     async with _session_factory() as session:
         try:
@@ -124,7 +124,7 @@ async def get_pg_db() -> AsyncGenerator[AsyncSession, None]:
             ...
     """
     if _session_factory is None:
-        raise RuntimeError("PostgreSQL session factory not initialised.")
+        await init_postgres()
 
     async with _session_factory() as session:
         try:

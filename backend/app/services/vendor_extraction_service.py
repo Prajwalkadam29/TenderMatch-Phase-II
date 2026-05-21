@@ -255,7 +255,7 @@ SCHEMA TO MATCH:
             try:
                 async with _GROQ_SEMAPHORE:   # EC7: cap concurrent calls
                     response = await self.client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="llama-3.1-8b-instant",
                         messages=[
                             {"role": "system", "content": sys_prompt},
                             {"role": "user", "content": self._get_prompt(chunk[:12_000])},

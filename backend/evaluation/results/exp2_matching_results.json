@@ -1,0 +1,115 @@
+{
+  "total_matches": 500,
+  "vendors": [
+    {
+      "vendor_id": "V-EVAL-004",
+      "vendor_name": "DataCore IT Services Pvt Ltd",
+      "completeness": 90.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 5,
+      "hard_filter_fail": 45,
+      "pass_rate_pct": 10.0,
+      "avg_score_passed": 88.9,
+      "top_recommended_tender": "TM-EVAL-IT-015"
+    },
+    {
+      "vendor_id": "V-EVAL-007",
+      "vendor_name": "Highway Constructors Ltd",
+      "completeness": 92.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 3,
+      "hard_filter_fail": 47,
+      "pass_rate_pct": 6.0,
+      "avg_score_passed": 91.6,
+      "top_recommended_tender": "TM-EVAL-ROADS-041"
+    },
+    {
+      "vendor_id": "V-EVAL-005",
+      "vendor_name": "AquaFlow Engineering Ltd",
+      "completeness": 85.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 2,
+      "hard_filter_fail": 48,
+      "pass_rate_pct": 4.0,
+      "avg_score_passed": 91.2,
+      "top_recommended_tender": "TM-EVAL-CIVIL-008"
+    },
+    {
+      "vendor_id": "V-EVAL-002",
+      "vendor_name": "SolarTech Renewables LLP",
+      "completeness": 88.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 2,
+      "hard_filter_fail": 48,
+      "pass_rate_pct": 4.0,
+      "avg_score_passed": 91.8,
+      "top_recommended_tender": "TM-EVAL-RENEWABLE-024"
+    },
+    {
+      "vendor_id": "V-EVAL-001",
+      "vendor_name": "TechBuild Infrastructure Pvt Ltd",
+      "completeness": 95.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 4,
+      "hard_filter_fail": 46,
+      "pass_rate_pct": 8.0,
+      "avg_score_passed": 88.7,
+      "top_recommended_tender": "TM-EVAL-CIVIL-008"
+    },
+    {
+      "vendor_id": "V-EVAL-006",
+      "vendor_name": "PowerGrid Electricals Pvt Ltd",
+      "completeness": 45.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 0,
+      "hard_filter_fail": 50,
+      "pass_rate_pct": 0.0,
+      "avg_score_passed": 0,
+      "top_recommended_tender": "N/A"
+    },
+    {
+      "vendor_id": "V-EVAL-008",
+      "vendor_name": "GreenBuild Multi-Domain Ltd",
+      "completeness": 78.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 4,
+      "hard_filter_fail": 46,
+      "pass_rate_pct": 8.0,
+      "avg_score_passed": 85.2,
+      "top_recommended_tender": "TM-EVAL-CIVIL-008"
+    },
+    {
+      "vendor_id": "V-EVAL-009",
+      "vendor_name": "StartupTech Solutions",
+      "completeness": 38.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 0,
+      "hard_filter_fail": 50,
+      "pass_rate_pct": 0.0,
+      "avg_score_passed": 0,
+      "top_recommended_tender": "N/A"
+    },
+    {
+      "vendor_id": "V-EVAL-010",
+      "vendor_name": "Consultancy Partners LLP",
+      "completeness": 65.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 1,
+      "hard_filter_fail": 49,
+      "pass_rate_pct": 2.0,
+      "avg_score_passed": 64.6,
+      "top_recommended_tender": "TM-EVAL-CIVIL-008"
+    },
+    {
+      "vendor_id": "V-EVAL-003",
+      "vendor_name": "MediSupply Solutions Pvt Ltd",
+      "completeness": 72.0,
+      "total_pairs": 50,
+      "hard_filter_pass": 3,
+      "hard_filter_fail": 47,
+      "pass_rate_pct": 6.0,
+      "avg_score_passed": 70.5,
+      "top_recommended_tender": "TM-EVAL-HEALTHCARE-029"
+    }
+  ]
+}
