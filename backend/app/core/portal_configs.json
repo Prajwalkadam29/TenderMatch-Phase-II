@@ -1,0 +1,20 @@
+{
+  "portals": [
+    {
+      "name": "cppp.nic.in",
+      "enabled": true,
+      "scrape_url": "https://eprocure.gov.in/eprocure/app",
+      "tender_link_selector": ".tender-link",
+      "requires_login": false,
+      "rate_limit_seconds": 5
+    },
+    {
+      "name": "mahatenders.gov.in",
+      "enabled": true,
+      "scrape_url": "https://mahatenders.gov.in/nicgep/app",
+      "tender_link_selector": "table.list_table tr td a",
+      "requires_login": false,
+      "rate_limit_seconds": 5
+    }
+  ]
+}
