@@ -1,6 +1,6 @@
 from celery import shared_task
 from app.services.email_service import EmailService
-
+import logging
 logger = logging.getLogger(__name__)
 
 @shared_task(name="run_match_and_notify_task")

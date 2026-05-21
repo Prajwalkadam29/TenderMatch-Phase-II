@@ -14,11 +14,17 @@ email-validator>=2.3.0
 # ── Data & Utilities ─────────────────────────────────────────────────────────
 pymupdf>=1.27.0
 groq>=1.2.0
+rank_bm25>=0.2.2
+sentence-transformers>=3.0.0
 httpx>=0.28.1
 beautifulsoup4>=4.14.3
 python-magic>=0.4.27; sys_platform != 'win32'
 python-magic-bin>=0.4.14; sys_platform == 'win32'
 werkzeug>=3.1.8
+python-docx>=1.1.2
+pdfplumber>=0.11.0
+pytesseract>=0.3.10
+Pillow>=10.4.0
 
 # ── Infrastructure (PostgreSQL & Redis) ──────────────────────────────────────
 sqlalchemy[asyncio]>=2.0.49
@@ -30,3 +36,8 @@ celery>=5.6.3
 redis>=4.2.0,<5.0.0
 async-timeout>=4.0.3
 fastapi-limiter==0.1.5
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-mock>=3.14.0

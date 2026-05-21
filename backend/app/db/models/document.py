@@ -108,3 +108,49 @@ class VendorProfile(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+class VendorProfileWeight(Base):
+    """
+    Learned weights for the 7-dimension scoring engine.
+    Follows a 3-tier fallback: Global -> Org -> Vendor.
+    """
+    __tablename__ = "vendor_profile_weights"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # ── Scope ─────────────────────────────────────────────────────────────────
+    # If vendor_profile_id is null but org_id is present, it's an Org-level fallback weight
+    vendor_profile_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("vendor_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        unique=True,
+    )
+    org_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    
+    # ── Learned Weights ───────────────────────────────────────────────────────
+    weight_domain = Column(Float, nullable=False, default=0.25)
+    weight_geography = Column(Float, nullable=False, default=0.15)
+    weight_financial = Column(Float, nullable=False, default=0.20)
+    weight_experience = Column(Float, nullable=False, default=0.15)
+    weight_certification = Column(Float, nullable=False, default=0.10)
+    weight_semantic = Column(Float, nullable=False, default=0.10)
+    weight_confidence = Column(Float, nullable=False, default=0.05)
+    
+    # ── Tracking ──────────────────────────────────────────────────────────────
+    total_feedback_count = Column(Integer, nullable=False, default=0)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+

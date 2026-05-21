@@ -79,21 +79,27 @@ def run_automated_scraper():
         
         # 1. Trigger pgvector embedding generation for the new scraped document
         from app.services.embedding_service import get_embedding_service
-        from app.tasks.document_tasks import _save_vector_to_postgres
+        from app.tasks.document_tasks import _save_tender_vector
         emb_svc = get_embedding_service()
         
         # We use the combined search_text for semantic indexing
         doc_vector = emb_svc.encode_text_sync(doc["search_text"])
-        keywords = [item["organization"], item["location"]]
         
-        _save_vector_to_postgres(
-            doc_id_str=str(inserted_id),
-            doc_type="tender",
+        run_async(_save_tender_vector(
+            mongo_id=str(inserted_id),
             vector=doc_vector,
-            keywords=keywords
-        )
+            org_id=None
+        ))
         
         logger.info(f"[Scraper] Indexed tender {ref_no} natively in PostgreSQL (pgvector).")
+        
+        # 2. Trigger Real-time Match & Notify for new global tender
+        from app.tasks.notification_tasks import run_match_and_notify_task
+        try:
+            run_match_and_notify_task.delay(str(inserted_id), None)
+            logger.info(f"[Scraper] Dispatched global Match & Notify for tender {ref_no}")
+        except Exception as e:
+            logger.error(f"[Scraper] Failed to dispatch notifications: {e}")
         
     logger.info(f"Automated scraper finished. Inserted {inserted_count} new tenders.")
     return f"Inserted {inserted_count} new tenders."

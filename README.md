@@ -1,341 +1,171 @@
-# TenderMatch AI 🎯
+# TenderMatch AI
 
-> **Enterprise-Grade AI-Powered Public Procurement Matching Platform**
+> An intelligent B2B procurement platform for deterministic and semantic tender‑to‑vendor matching.
 
-TenderMatch AI is a production-ready, polyglot-persistence matching engine designed to bridge the gap between complex government/enterprise procurement opportunities (Tenders) and qualified service providers (Vendors). 
+## What is TenderMatch
+TenderMatch is an advanced B2B procurement engine designed to seamlessly connect vendors with the most relevant government and enterprise tenders. By combining the precision of deterministic hard filtering (like turnover and geographic limits) with the nuance of AI‑driven semantic matching and Large Language Model (LLM) explanations, TenderMatch ensures that vendors only see opportunities they can actually win.
 
-By leveraging Large Language Models (LLMs) for unstructured data extraction and Vector databases for semantic similarity, TenderMatch automates the laborious process of tender evaluation, offering deterministic eligibility filtering alongside probabilistic capability matching.
+For organizations, the platform serves as an isolated, multi‑tenant workspace where detailed vendor capabilities, compliance standings, and financial profiles are securely managed and actively evaluated against inbound tender requirements. By implementing an adaptive learning loop, the AI engine dynamically learns from user feedback, making future recommendations increasingly accurate for each specific organization.
 
----
+## Current System Status
 
-## 📖 Table of Contents
-- [Problem Statement](#-problem-statement)
-- [Solution Overview](#-solution-overview)
-- [Current Implemented Features](#-current-implemented-features)
-- [Architecture Overview](#-architecture-overview)
-- [Tech Stack](#-tech-stack)
-- [System Design](#-system-design)
-  - [Polyglot Persistence Strategy](#polyglot-persistence-strategy)
-  - [AI Matching Pipeline](#ai-matching-pipeline)
-  - [Tender Ingestion Pipeline](#tender-ingestion-pipeline)
-- [Project Structure](#-project-structure)
-- [API Overview](#-api-overview)
-- [Environment Setup](#-environment-setup)
-- [Local Development Setup](#-local-development-setup)
-- [Docker Infrastructure](#-docker-infrastructure)
-- [Production Deployment Notes](#-production-deployment-notes)
-- [Security Considerations](#-security-considerations)
-- [Roadmap & Future Improvements](#-roadmap--future-improvements)
-- [License](#-license)
+| Component | Status | Notes |
+|---|---|---|
+| Auth & Multi‑tenancy | ✅ Complete | JWT + Refresh Cookie, Org‑level isolation |
+| Vendor Profile Builder | ✅ Complete | 3‑Phase structured data collection |
+| Tender PDF Ingestion | ✅ Complete | PyMuPDF/OCR fallback + chunking |
+| AI Extraction (Groq/LLaMA 3) | ✅ Complete | JSON structured data extraction from PDFs |
+| Hard Filter Engine | ✅ Complete | Deterministic pass/fail checks |
+| Weighted Scoring Engine | ✅ Complete | 7‑dimension evaluation |
+| LLM Explanation Engine | ✅ Complete | Groq‑powered strengths and risk generation |
+| Match Orchestrator | ✅ Complete | Direct sequential processing pipeline |
+| LangGraph Agentic Pipeline | ✅ Complete | Dynamic routing with Planner, Reranker, and Critic nodes |
+| Critic Agent (Hallucination) | ✅ Complete | Deterministic validation & LLM hallucination suppression |
+| Hybrid Retrieval System | ✅ Complete | Blended `pgvector` semantic + `rank_bm25` keyword search |
+| Adaptive Feedback Learning | ✅ Complete | EMA weight updates via Celery |
+| Frontend Dashboard | ✅ Complete | Metrics, stats, and recent activity |
+| Match History & Detail | ✅ Complete | Detailed breakdown UI with explanations |
+| Feedback Buttons & Signals | ✅ Complete | Submit/Won/Lost signals driving AI learning |
+| Radar Chart Visualization | ✅ Complete | Real‑time Recharts weight tracking |
+| **Bidassist Auto‑Ingestion** | ✅ Complete | Pulls tenders via Bidassist API, normalises, deduplicates, and routes through the production‑grade ingestion pipeline |
+| **Scheduled Portal Scraping** | ✅ Complete | Firecrawl‑backed scraper with graceful BS4 fallback, configurable portals, rate‑limiting and deduplication |
+| Admin Sync Dashboard | ✅ Complete | UI for manual sync trigger, history, and health monitoring |
+| **Vendor Document Auto-Fill Pipeline** | ✅ Complete | 3-phase extraction (upload → draft review → PostgreSQL commit), 8 edge cases hardened, full security audit |
 
----
-
-## 🚨 Problem Statement
-
-Public procurement and enterprise tendering are plagued by extreme friction:
-1. **Unstructured Data:** Tenders are published as massive, complex PDFs (often scanned images or poorly formatted text).
-2. **Evaluation Fatigue:** Vendors spend hundreds of hours manually parsing 500+ page documents just to determine basic eligibility.
-3. **Missed Opportunities:** Keyword-based search fails to capture semantic capabilities (e.g., matching "NLP Engineering" to "Text Classification Services").
-4. **Delayed Intelligence:** By the time a vendor discovers an eligible tender, the submission window is often closing.
-
-## 💡 Solution Overview
-
-TenderMatch acts as an automated procurement intelligence layer:
-1. **Multi-Modal Extraction:** Ingests PDFs using a cascading pipeline (PyMuPDF for text, PDFPlumber for tables, Tesseract OCR for scans).
-2. **LLM Structuring:** Uses Groq-powered LLMs to extract rigid JSON schemas (Turnover, Certifications, Scope, Deadlines) from unstructured text chunks.
-3. **Semantic Matching:** Generates dense vector embeddings (`all-MiniLM-L6-v2`) for both Vendor Capabilities and Tender Scope.
-4. **Hybrid Scoring:** Combines hard deterministic filters (e.g., "Must have ISO 9001", "Must have $5M turnover") with soft semantic similarity scores using `pgvector`.
-5. **Real-time Notifications:** Dispatches automated email alerts when high-confidence matches are found.
-
----
-
-## ✨ Current Implemented Features
-
-### 🟢 Fully Implemented & Working
-* **Polyglot Persistence Model:** PostgreSQL (Source of truth, auth, vectors) + MongoDB (Document payload store).
-* **Robust Auth System:** JWT-based authentication, RBAC (Admin/User), and isolated Organizational tenancy.
-* **Document Ingestion Pipeline:** Async Celery tasks handling PDF text/table/OCR extraction and overlapping text chunking (to bypass LLM token limits).
-* **LLM Information Extraction:** Groq API integration for translating legal tender text into structured JSON.
-* **Semantic Vector Generation:** SentenceTransformers (`all-MiniLM-L6-v2`) creating 384-dimensional embeddings.
-* **Hybrid Matching Engine:** Configurable weighting system combining financial, geographic, domain, and semantic capability scores.
-* **Automated Email Alerts:** Premium HTML email notifications triggered asynchronously for matches scoring >75%.
-* **Frontend SPA:** React + TypeScript + Vite frontend utilizing TanStack Query for aggressive caching and optimized state management.
-* **Dockerized Infrastructure:** Pre-configured `docker-compose.yaml` spinning up Postgres (`pgvector`), MongoDB, Redis, and Celery workers.
-* **Database Migrations:** Fully configured Alembic pipeline for PostgreSQL schema evolution.
-
-### 🟡 In Progress / Partially Implemented
-* **Interactive Dashboard:** Basic metrics exist, but advanced Recharts visualizations for win-probability trends are pending.
-* **Multi-Language Support:** LLM can read multiple languages, but the UI and prompt chains are optimized for English.
-
----
-
-## 🏗 Architecture Overview
-
-TenderMatch utilizes an event-driven, microservice-oriented architecture designed for horizontal scalability and high availability.
+## Architecture Overview
+The system relies on a polyglot persistence strategy powered by FastAPI and React. Document text and structured extractions live in MongoDB for flexible querying, while relational metadata, vendor profiles, and the pgvector embeddings are firmly rooted in PostgreSQL. Asynchronous workloads, such as tender ingestion and feedback‑driven weight updates, are brokered through Redis and processed by Celery workers. The matching engine features two distinct paths: a high‑speed direct Orchestrator and a resilient LangGraph Agentic Pipeline.
 
 ```mermaid
-graph TD
-    Client[Client (React/Vite)] -->|REST API| FastAPI[FastAPI Backend]
-    
-    FastAPI -->|Auth & Vendor Data| PG[(PostgreSQL + pgvector)]
-    FastAPI -->|Fetch Raw Tenders| Mongo[(MongoDB)]
-    
-    FastAPI -->|Publish Task| Redis((Redis Broker))
-    Redis -->|Consume Task| Celery[Celery Workers]
-    
-    Celery -->|1. Extract Text/Tables| PDFParser[PDF Pipeline (PyMuPDF/OCR)]
-    Celery -->|2. Structure Data| Groq[Groq LLM API]
-    Celery -->|3. Generate Vectors| EmbeddingLib[all-MiniLM-L6-v2]
-    
-    Celery -->|Write Structured| Mongo
-    Celery -->|Write Vectors| PG
-    
-    Celery -->|4. High Match Alert| SMTP[SMTP Email Service]
-    
-    subgraph Data Layer
-        PG
-        Mongo
-        Redis
+flowchart TD
+    Client[React Frontend] -->|API Calls| FastAPI[FastAPI Backend]
+    FastAPI -->|Queries| PG[(PostgreSQL + pgvector)]
+    FastAPI -->|Documents| Mongo[(MongoDB)]
+    FastAPI -->|Dispatch Task| Redis[(Redis Broker)]
+    Redis --> Celery[Celery Workers]
+    subgraph Celery Tasks
+        TenderIngest[Tender Ingestion Task]
+        MatchTask[Match & Notify Task]
+        FeedbackTask[EMA Feedback Task]
     end
+    Celery --> TenderIngest
+    Celery --> MatchTask
+    Celery --> FeedbackTask
+    subgraph AI Pipeline
+        direction TB
+        Ext[Groq Extraction]
+        Embed[Vector Embeddings]
+        LangGraph[LangGraph Agent Graph]
+        Direct[Direct Match Orchestrator]
+    end
+    TenderIngest --> Ext --> Embed
+    MatchTask --> LangGraph
+    MatchTask --> Direct
+    LangGraph -->|Read/Write State| Mongo
+    Direct --> Mongo
+    FeedbackTask -->|Updates Weights| PG
 ```
 
----
+## AI Pipeline — How It Works
+1. **Tender Ingestion Pipeline**: When a PDF is uploaded (or fetched via Bidassist/Firecrawl), text is extracted via PyMuPDF (or OCR via Tesseract). The text is chunked and sent to Groq (LLaMA 3) to extract structured JSON requirements (turnover, sector, certifications). A 384‑dimensional embedding is generated and stored in PostgreSQL alongside the document in MongoDB.
+2. **Hard Filter Engine**: A deterministic gauntlet that immediately disqualifies vendors failing strict binary requirements (e.g., vendor turnover is below the tender's strict minimum). No LLM tokens are wasted if a vendor is ineligible.
+3. **Weighted Scoring Engine**: For eligible vendors, a 0‑100 score is computed across 7 dimensions (domain fit, geography, financial capacity, experience, certifications, capability similarity, and confidence).
+4. **LLM Explanation Engine**: Groq analyzes the raw scores and filter results to generate a human‑readable executive summary, bulleted strengths, and risk factors, concluding with a definitive recommendation (e.g., "Strongly Recommended").
+5. **LangGraph Agentic Pipeline**: An advanced orchestration path structured as a state machine. It begins with a **Planner Agent** that evaluates context (e.g., vendor completeness) to build a dynamic execution plan. The **Hybrid Retriever** blends semantic and keyword matching, conditionally invoking a **Reranker Agent** for ambiguous scores. After the LLM writes its rationale, a deterministic **Critic Agent** runs strict mathematical checks to suppress hallucinations and override rogue recommendations before notifying the user.
+6. **Adaptive Feedback Learning Loop**: As users interact with matches, their signals trigger a Celery task that mathematically shifts the scoring weights for that specific vendor profile, ensuring the AI continuously aligns with business reality.
+7. **Bidassist Integration**: `BidassistService` periodically pulls active tenders from the Bidassist public API, normalises the payload, deduplicates against existing records, and injects them into the same ingestion pipeline (PDFs are downloaded and processed, non‑PDF tenders are stored directly).
+8. **Scheduled Portal Scraping**: `ScrapingService` reads `portal_configs.json` to drive Firecrawl‑backed scraping of configured government portals, applies the same deduplication logic, and routes new PDFs through the ingestion pipeline.
 
-## 🛠 Tech Stack
+## Tech Stack
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React, Vite, Tailwind CSS, Recharts, TanStack Query, Axios |
+| **Backend API** | FastAPI, Pydantic, Uvicorn |
+| **Databases** | PostgreSQL, pgvector (Vector DB), MongoDB (Document DB), Redis |
+| **AI / NLP** | LangChain, LangGraph, Groq API (LLaMA 3), `sentence-transformers` |
+| **Async Processing** | Celery |
+| **ORM & Migrations** | SQLAlchemy, Alembic |
 
-**Backend:**
-* **Framework:** FastAPI (Python 3.10+)
-* **Task Queue:** Celery + Redis
-* **ORM & Migrations:** SQLAlchemy 2.0 (Asyncpg), Alembic
-* **AI/ML:** Groq API (LLaMA 3), `sentence-transformers`
-* **Extraction:** `pymupdf`, `pdfplumber`, `pytesseract`
-* **Testing:** Pytest, HTTPX
-
-**Databases:**
-* **PostgreSQL (16+):** Relational truth, Auth, `JSONB` for Vendor Profiles, `pgvector` for semantic embeddings.
-* **MongoDB (6.0+):** NoSQL document store for massive, unstructured raw tender text and LLM JSON outputs.
-
-**Frontend:**
-* **Framework:** React 18, Vite, TypeScript
-* **State/Data Fetching:** TanStack Query (React Query)
-* **Styling:** Vanilla CSS / Design Tokens
-
-**DevOps & Infrastructure:**
-* **Containerization:** Docker, Docker Compose
-* **Process Monitoring:** Celery Flower
-
----
-
-## ⚙️ System Design
-
-### Polyglot Persistence Strategy
-Why two databases?
-1. **PostgreSQL (`pgvector`)**: Acts as the absolute source of truth. Manages `Users`, `Organizations`, and `VendorProfiles` (stored as flexible `JSONB`). Crucially, it stores the 384-dimensional vector embeddings for sub-millisecond semantic search via HNSW indexes.
-2. **MongoDB**: Acts as a high-throughput sink for incoming documents. Tenders can be hundreds of pages long. Storing megabytes of raw text and unpredictable LLM-extracted JSON hierarchies in Postgres leads to row-bloat and poor cache performance. MongoDB handles this unstructured payload effortlessly. The two databases are linked via a `mongo_id` indexed bridge column in Postgres.
-
-### Tender Ingestion Pipeline
-1. **Upload:** User uploads PDF. FastAPI saves bytes to disk/blob storage and returns a `202 Accepted`.
-2. **Message Queue:** Task is dispatched to Redis.
-3. **Cascading Extraction (Worker):**
-   - Attempts fast text extraction via PyMuPDF.
-   - Parses complex pricing/technical grids via PDFPlumber.
-   - If empty (scanned image), falls back to Tesseract OCR.
-4. **Chunking:** Text is split into 2,000-character overlapping chunks to respect LLM context windows.
-5. **LLM Structuring:** Groq API converts legalese into structured JSON (Turnover, Exp, Certs).
-6. **Vectorization:** A synthesized "Search Text" is embedded using local SentenceTransformers.
-7. **Persistence & Notification:** Data is written to Mongo/Postgres. An observer pattern triggers a match cycle against all organizational vendor profiles, dispatching an email if score > 75%.
-
-### AI Matching Pipeline
-The Matching Engine evaluates candidates using a **Hybrid Scoring System**:
-* **Deterministic Filters (Hard Pass/Fail):** Instantly disqualifies vendors if they are blacklisted, lack mandatory turnover, or operate outside allowed geographic bounds.
-* **Probabilistic Scoring (Soft Weights):**
-  - Domain Fit (25%)
-  - Financial Capacity Ratio (20%)
-  - Geographic Proximity (15%)
-  - Experience / Track Record (15%)
-  - Certification Overlap (10%)
-  - Semantic Capability Similarity via Cosine Distance (10%)
-  - Profile Completeness Confidence (5%)
-
----
-
-## 📂 Project Structure
-
+## Project Structure
 ```text
-tendermatch/
+TenderMatch/
 ├── backend/
-│   ├── alembic/                 # PostgreSQL Migration Scripts
+│   ├── alembic/                # DB migrations
 │   ├── app/
-│   │   ├── api/                 # FastAPI Route Handlers (Auth, Tenders, Match)
-│   │   ├── core/                # Config, DB connections, Celery setup
-│   │   ├── db/                  # SQLAlchemy ORM Models (User, Org, VendorProfile, Tender)
-│   │   ├── services/            # Core Business Logic (Matching, PDF, Email, LLM)
-│   │   └── tasks/               # Celery Background Workers (Ingestion, Notifications)
-│   ├── scripts/                 # Init scripts (init_pgvector.sql)
-│   ├── tests/                   # Pytest integration suite
-│   ├── requirements.txt         
-│   └── alembic.ini              
+│   │   ├── agents/             # LangGraph nodes and state graph
+│   │   ├── api/                # FastAPI routers (41 endpoints + admin sync)
+│   │   ├── core/               # Settings, DB connections, Celery app
+│   │   ├── db/models/          # SQLAlchemy and Mongo mappings
+│   │   ├── services/           # Business logic, Hard Filter, Scoring, explanation, Bidassist, Scraping
+│   │   └── tasks/              # Celery task definitions (including scheduled_tasks)
+│   └── tests/                  # 10+ new Phase 5 integration tests
 ├── frontend/
-│   ├── public/                  
-│   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   ├── pages/               # Dashboard, Upload, AIMatching, TenderDetail
-│   │   ├── services/            # Axios API clients
-│   │   └── main.tsx             # Entry point (TanStack Query Provider)
-│   ├── package.json             
-│   └── vite.config.ts           
-├── docker-compose.yaml          # Infrastructure definition
-├── README.md                    # Project documentation
-└── .gitignore                   
+│   └── src/
+│       ├── components/         # React components, admin sync dashboard, etc.
+│       ├── pages/              # 13 React views (incl. AdminSync)
+│       └── services/           # Axios API clients
+├── docker-compose.yaml
 ```
 
----
+## API Overview
+(All endpoints are documented in `API-Documentation.md`. Below are the new Phase 5 additions.)
 
-## 🔌 API Overview
+### Admin Sync Control (`/admin/sync/*`)
+- **POST `/admin/sync/trigger`** – Manually trigger the nightly Bidassist sync. Returns Celery `task_id` and status `queued`. **Role:** `SUPER` (or `ADMIN1` for testing).
+- **GET `/admin/sync/logs`** – Retrieve the last 30 sync log entries (type, timestamps, status, counts). **Role:** `SUPER`.
+- **GET `/admin/sync/status`** – Overview of sync health: last run, next scheduled run, total tenders in DB, and simple Bidassist connectivity check. **Role:** `SUPER`.
 
-*All endpoints are prefixed with `/api/v1` (or relative to setup).*
+These endpoints are protected by the existing `require_role` dependency and use the Mongo `sync_logs` collection for persistence.
 
-### Authentication (`/auth`)
-* `POST /auth/register` - Create Organization + Admin User.
-* `POST /auth/login` - Authenticate and receive JWT.
+## Local Development Setup
+1. **Clone repo**: `git clone <url> && cd TenderMatch`
+2. **Environment Setup**: Copy `backend/.env.example` to `backend/.env` and fill in keys (`GROQ_API_KEY`, `BIDASSIST_API_KEY`, `FIRECRAWL_API_KEY`, etc.).
+3. **Start Infrastructure**: `docker-compose up -d` to spin up PostgreSQL, MongoDB, and Redis.
+4. **Database Migrations**: In the backend directory, run `alembic upgrade head`.
+5. **Start Backend**: `uvicorn app.main:app --reload`.
+6. **Start Frontend**: In a new terminal, `cd frontend && npm install && npm run dev`.
+7. **Start Celery Worker**: `celery -A app.core.celery_app worker --loglevel=info -P gevent`.
+8. **Start Celery Beat**: `celery -A app.core.celery_app beat --loglevel=info`.
 
-### Vendor Profiles (`/vendor-profiles`)
-* `POST /vendor-profiles/` - Create a comprehensive JSONB profile.
-* `GET /vendor-profiles/me` - Fetch active profiles for the current user.
+## Environment Variables
+| Variable | Purpose | Example |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost/db` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017` |
+| `REDIS_URL` | Redis message broker URL | `redis://localhost:6379/0` |
+| `JWT_SECRET_KEY` | Secret for signing tokens | `supersecret` |
+| `GROQ_API_KEY` | Key for LLM inference | `gsk_...` |
+| `BIDASSIST_API_URL` | Base URL for Bidassist API | `https://api.example-bidassist.com` |
+| `BIDASSIST_API_KEY` | Key for Bidassist API | `YOUR_BIDASSIST_KEY` |
+| `FIRECRAWL_API_KEY` | Key for Firecrawl scraper | `YOUR_FIRECRAWL_KEY` |
 
-### Document Management (`/upload`)
-* `POST /upload/tender` - Upload PDF -> Returns Task ID.
-* `GET /upload/status/{task_id}` - Poll Celery task status.
+## Test Suite
+| Test File | What It Tests | Test Count |
+|---|---|---|
+| `test_adaptive_feedback.py` | EMA math, fallback logic, normalization | 5 |
+| `test_explanation_engine.py` | Groq prompting, recommendations, schemas | 17 |
+| `test_hard_filter_engine.py` | Deterministic logic (turnover, geography) | 6 |
+| `test_ingestion_pipeline.py` | Chunking, extraction unioning, text mapping | 13 |
+| `test_langgraph_agent.py` | State routing, agent nodes, graph compilation | 15 |
+| `test_planner_agent.py` | Planner Agent state routing, Redis caching, scoring | 8 |
+| `test_match_api.py` | Match routes, async polling, feedback ingestion | 3 |
+| `test_match_orchestrator.py` | Full sequential pipeline execution | 10 |
+| `test_polyglot_flow.py` | Complete DB registration and storage flows | 3 |
+| `test_scoring_engine.py` | Weighted dimensional calculations | 29 |
+| `test_bidassist_sync.py` | Bidassist API integration, deduplication, scheduled task idempotency | 12 |
+| `test_vendor_ingestion.py` | Unit tests: extraction service, merge logic, API stubs | 11 |
+| `test_vendor_ingestion_e2e.py` | E2E pipeline, security (two-org isolation), EC1–EC8 edge cases, idempotency | 19 |
+| **`test_tenders_api.py` / `test_scraping.py` / etc** | Additional integration tests and component tests | 35 |
+| **Total** |  | **186** |
 
-### AI Matching (`/match`)
-* `POST /match/run` - Trigger matching engine for a specific Vendor Profile. Returns top K tenders with explanations.
-* `GET /match/tender/{tender_id}` - Get full tender payload (from Mongo) + Match analysis.
-
----
-
-## 🔐 Environment Setup
-
-Create a `.env` file in the `backend/` directory. **Never commit this file.**
-
-```env
-# Backend Environment Configuration
-ENVIRONMENT=development
-
-# Security
-JWT_SECRET=your_super_secret_64_char_hex_string
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-
-# Databases
-MONGODB_URI=mongodb://localhost:27018
-DATABASE_NAME=tendermatch
-
-POSTGRES_URI=postgresql+asyncpg://tendermatch:changeme@localhost:5433/tendermatch
-POSTGRES_DB=tendermatch
-POSTGRES_USER=tendermatch
-POSTGRES_PASSWORD=changeme
-
-REDIS_URL=redis://localhost:6380/0
-
-# External APIs
-GROQ_API_KEY=gsk_your_groq_api_key
-
-# Email Service (SMTP)
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your_app_specific_password
-FROM_EMAIL=no-reply@tendermatch.com
-
-# Frontend Context
-FRONTEND_URL=http://localhost:5173
-```
-
----
-
-## 🐳 Docker Infrastructure
-
-The project utilizes Docker Compose to orchestrate the foundational data layer.
-
-1. **Start Infrastructure:**
-   ```bash
-   docker-compose up -d postgres mongodb redis celery_worker celery_beat
-   ```
-2. **Verify Health:**
-   Ensure the `tendermatch_postgres` container successfully executes the `init_pgvector.sql` script on first boot to enable the `vector` extension.
-
-*Note: The FastAPI app and Vite frontend are designed to run locally on the host during development, connecting to the exposed Docker ports (5433, 27018, 6380).*
+## Roadmap
+- ✅ **Phase 1** — Core Platform (Multi‑tenancy, Auth, UI)
+- ✅ **Phase 2** — AI Matching Pipeline (Extraction, Filtering, Scoring)
+- ✅ **Phase 3** — LangGraph Agentic Pipeline (Stateful orchestration)
+- ✅ **Phase 4** — Adaptive Feedback Learning (EMA weight updates)
+- ✅ **Phase 5** — Bidassist Auto‑Ingestion & Scheduled Tender Scraping
+- ✅ **Phase 6** — Agentic RAG, Critic Agent & Vendor Document Auto-Fill
+- ✅ **Phase 7** — Conversational RAG (Chat with Tender)
+- ⬜ **Phase 8** — Immutable Audit Ledger
+- ⬜ **Phase 9** — Multilingual Support
 
 ---
-
-## 💻 Local Development Setup
-
-### 1. Database Migrations (Backend)
-With the Docker infrastructure running, initialize the PostgreSQL schema:
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
-# Run Alembic migrations
-alembic upgrade head
-```
-
-### 2. Start FastAPI Server
-```bash
-# From the backend directory
-uvicorn app.main:app --reload --port 8000
-```
-
-### 3. Start Frontend App
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 4. Run Automated Tests
-```bash
-cd backend
-python -m pytest tests/test_polyglot_flow.py -v
-```
-
----
-
-## 🚀 Production Deployment Notes
-
-To take this application to production, consider the following architecture hardening steps:
-
-1. **Vector Indexing:** The current schema utilizes raw Cosine Similarity scans. For >1M tenders, implement an **HNSW** (Hierarchical Navigable Small World) index in Alembic:
-   ```sql
-   CREATE INDEX ON tenders USING hnsw (embedding vector_cosine_ops);
-   ```
-2. **Gunicorn & Uvicorn Workers:** Wrap the FastAPI application in Gunicorn with Uvicorn worker classes to handle concurrent connection pooling efficiently.
-3. **Secret Management:** Move from `.env` files to AWS Secrets Manager or HashiCorp Vault.
-4. **Celery Auto-Scaling:** Configure Celery workers to scale based on the Redis queue length (`sqs` or `rabbitmq` recommended for production over Redis).
-
----
-
-## 🛡️ Security Considerations
-
-* **Rate Limiting:** Implemented via `fastapi-limiter` using Redis to protect public endpoints.
-* **Organizational Isolation:** All queries strictly enforce tenancy via the `org_id` foreign key. A user can never evaluate a tender or profile belonging to another tenant.
-* **File Validation:** The `python-magic` library validates MIME types securely; malicious files disguised as PDFs are rejected before parsing.
-* **SQL Injection:** Complete prevention via SQLAlchemy 2.0 parameterized execution.
-
----
-
-## 🗺 Roadmap & Future Improvements
-
-- [ ] **Multi-Agent Evaluation:** Introduce a secondary "Devil's Advocate" LLM agent to critique the initial match score before presenting it to the user.
-- [ ] **Web Scraping Integration:** Activate the `celery_beat` scheduled tasks to automatically scrape active government portals (e.g., SAM.gov, eProcure) nightly.
-- [ ] **Conversational RAG:** Allow users to "Chat with the Tender" (e.g., "What are the exact SLA penalties in Section 4?") using the existing vectors.
-- [ ] **Export Engine:** Generate pre-filled compliance matrices and bid proposal templates as downloadable Word documents.
-
----
-
-## 📄 License
-
-Copyright © 2026 TenderMatch. All rights reserved.
-*This is proprietary software intended for authorized enterprise usage.*

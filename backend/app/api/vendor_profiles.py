@@ -117,7 +117,7 @@ async def create_vendor_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_pg_db),
 ):
-    data = payload.model_dump()
+    data = payload.model_dump(mode="json")
     completeness, details = _compute_completeness(data)
     vendor_id = _gen_vendor_id()
 

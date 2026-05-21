@@ -18,6 +18,7 @@ import type {
   NotificationPreferencesBlock,
   VendorProfileResponse,
 } from '../types/vendorProfile';
+import { WeightRadarChart } from '../components/vendorProfile/WeightRadarChart';
 import '../components/vendorProfile/VendorProfileForm.css';
 
 /* ── Default empty state ─────────────────────────────────────────────────── */
@@ -351,6 +352,12 @@ export const VendorProfilePage: React.FC = () => {
             {id ? 'Refine your organization metadata for maximum predictive match accuracy.' : 'Complete your vendor profile in 3 phases to unlock AI-powered tender matching'}
           </p>
         </div>
+
+        {id && (
+          <div className="mb-8">
+            <WeightRadarChart vendorProfileId={id} />
+          </div>
+        )}
 
         {fetching ? (
           <div className="flex items-center justify-center py-20">

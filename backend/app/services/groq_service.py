@@ -117,6 +117,111 @@ async def extract_with_groq(document_text: str) -> dict:
     }
 
 
+# ─── Multi-Agent Devil's Advocate ─────────────────────────────────────────────
+
+async def generate_devils_advocate_critique(
+    vendor_profile: dict, 
+    tender_summary: dict, 
+    initial_score: float
+) -> dict:
+    """
+    Acts as a secondary 'Devil's Advocate' agent to critique an initial match.
+    Returns a critical risk analysis and an adjusted score.
+    """
+    client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    
+    sys_prompt = """You are a highly critical, pessimistic Procurement Risk Analyst ("Devil's Advocate").
+Your goal is to find reasons why this Vendor will FAIL or struggle to win this Tender.
+Look for gaps in experience, compliance risks, geographic stretching, or missing certifications.
+Always respond with valid JSON."""
+
+    user_prompt = f"""
+Analyze this Vendor-Tender match. An initial algorithm scored this a {initial_score}/100.
+
+Vendor Profile Snippet:
+{json.dumps(vendor_profile, indent=2)[:2000]}
+
+Tender Summary Snippet:
+{json.dumps(tender_summary, indent=2)[:2000]}
+
+Provide your critical analysis as JSON:
+{{
+  "critical_risks": ["Risk 1", "Risk 2"],
+  "devil_advocate_summary": "A 2-sentence harsh but fair critique of why they might lose.",
+  "adjusted_score": 65.5  // Adjust the initial score down if risks are severe, or keep it the same if it's bulletproof. Must be a float.
+}}
+"""
+
+    response = await client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": sys_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        temperature=0.3,
+        max_tokens=500,
+    )
+
+    raw_content = _strip_markdown_fences(response.choices[0].message.content.strip())
+    
+    try:
+        parsed = json.loads(raw_content)
+        return {
+            "critical_risks": parsed.get("critical_risks", []),
+            "devil_advocate_summary": parsed.get("devil_advocate_summary", "No critique provided."),
+            "adjusted_score": float(parsed.get("adjusted_score", initial_score))
+        }
+    except Exception as exc:
+        logger.error(f"Devil's Advocate parsing failed: {exc}")
+        return {
+            "critical_risks": ["Could not generate risk analysis."],
+            "devil_advocate_summary": "Error generating critique.",
+            "adjusted_score": initial_score
+        }
+
+
+# ─── Conversational RAG (Chat with Tender) ────────────────────────────────────
+
+async def chat_with_tender(document_text: str, question: str) -> str:
+    """
+    Implements Conversational RAG by leveraging the large context window of LLaMA-3.
+    Stuffs the raw document text into the prompt alongside the user's query.
+    """
+    client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    
+    # Truncate to ~100k chars to stay safely within 128k token context window
+    max_chars = 100_000
+    if len(document_text) > max_chars:
+        document_text = document_text[:max_chars] + "\n\n[... document truncated ...]"
+
+    sys_prompt = """You are a highly analytical Procurement Assistant. 
+Your job is to answer questions strictly based on the provided Tender Document Text.
+Do not hallucinate. If the answer is not in the text, say 'I cannot find the answer in the provided document.'
+Provide specific section references if possible. Be concise and professional."""
+
+    user_prompt = f"""
+TENDER DOCUMENT TEXT:
+{document_text}
+
+QUESTION:
+{question}
+"""
+
+    try:
+        response = await client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user",   "content": user_prompt},
+            ],
+            temperature=0.2,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        logger.error(f"Chat with tender failed: {exc}")
+        return "Sorry, I encountered an error while analyzing the document."
+
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
 def _strip_markdown_fences(text: str) -> str:

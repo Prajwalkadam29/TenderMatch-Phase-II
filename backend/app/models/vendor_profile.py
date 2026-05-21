@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 
 
@@ -207,9 +207,7 @@ class VendorProfileInDB(BaseModel):
     compliance: ComplianceBlock
     notification_preferences: NotificationPreferencesBlock
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 # ── Request/Response Pydantic models ───────────────────────────────────────────

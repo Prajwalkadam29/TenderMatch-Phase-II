@@ -88,6 +88,11 @@ app.include_router(match.router)
 app.include_router(vendor_profiles.router)
 app.include_router(structured_match.router)
 app.include_router(notify.router)
+from app.api import tenders
+app.include_router(tenders.router)
+from app.api import scrapers, admin
+app.include_router(scrapers.router)
+app.include_router(admin.router)
 
 
 @app.get("/", tags=["Health"])

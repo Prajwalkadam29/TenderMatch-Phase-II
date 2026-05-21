@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 from datetime import datetime
 
@@ -16,9 +16,7 @@ class OrganizationInDB(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 def org_helper(org: dict) -> dict:

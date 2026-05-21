@@ -44,7 +44,7 @@ async def run_structured_match(
 
 from app.core.database import get_db
 
-from app.services.matching_service import match_vendor_to_tenders
+from app.services.matching_service import run_matching_engine
 
 @router.post("/run/{vendor_id}")
 async def run_batch_structured_match(
@@ -56,7 +56,7 @@ async def run_batch_structured_match(
     Unified Matching Engine (pgvector + Business Rules).
     """
     try:
-        results = await match_vendor_to_tenders(
+        results = await run_matching_engine(
             vendor_id=vendor_id,
             top_k=50,
             explain=True,

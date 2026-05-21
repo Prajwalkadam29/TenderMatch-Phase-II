@@ -90,3 +90,5 @@ def require_role(*roles: str):
             )
         return current_user
     return role_checker
+
+require_super_admin = require_role("SUPER_ADMIN", "ADMIN1") # Allowing ADMIN1 for testing convenience

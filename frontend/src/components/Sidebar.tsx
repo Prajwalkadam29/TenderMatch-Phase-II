@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, FileText, User, BarChart2,
     Users, Building2, CreditCard, LifeBuoy, LogOut,
-    Upload, Cpu, ClipboardList, ChevronRight, Moon, Sun, Briefcase
+    Upload, Cpu, ClipboardList, ChevronRight, Moon, Sun, Briefcase, History, RefreshCw
 } from 'lucide-react';
 
 interface NavItem {
@@ -24,6 +24,7 @@ const navGroups: NavGroup[] = [
         items: [
             { name: 'Dashboard',   href: '/dashboard', icon: LayoutDashboard, roles: ['USER', 'ADMIN1', 'CUSTOMER_SUPPORT'] },
             { name: 'AI Matching', href: '/match',     icon: Cpu,             roles: ['USER', 'ADMIN1'] },
+            { name: 'Match History', href: '/match/history', icon: History,     roles: ['USER', 'ADMIN1'] },
             { name: 'Tenders',     href: '/tenders',   icon: FileText,        roles: ['USER', 'ADMIN1'] },
         ]
     },
@@ -41,16 +42,17 @@ const navGroups: NavGroup[] = [
         items: [
             { name: 'Deep Analytics', href: '/analytics',      icon: BarChart2,      roles: ['ADMIN1'] },
             { name: 'Team Members',   href: '/users',          icon: Users,          roles: ['ADMIN1'] },
-            { name: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard,roles: ['SUPERADMIN'] },
-            { name: 'Organizations',  href: '/admin/organizations', icon: Building2, roles: ['SUPERADMIN'] },
-            { name: 'Subscriptions',  href: '/admin/subscriptions', icon: CreditCard,roles: ['SUPERADMIN'] },
+            { name: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard,roles: ['SUPERADMIN', 'SUPER', 'ADMIN1'] },
+            { name: 'Organizations',  href: '/admin/organizations', icon: Building2, roles: ['SUPERADMIN', 'SUPER', 'ADMIN1'] },
+            { name: 'Subscriptions',  href: '/admin/subscriptions', icon: CreditCard,roles: ['SUPERADMIN', 'SUPER', 'ADMIN1'] },
+            { name: 'Admin Sync',     href: '/admin/sync',     icon: RefreshCw,      roles: ['SUPERADMIN', 'SUPER', 'ADMIN1'] },
             { name: 'Support View',   href: '/support/view/1', icon: LifeBuoy,      roles: ['CUSTOMER_SUPPORT'] },
         ]
     }
 ];
 
 export const Sidebar = () => {
-    const { user, hasRole, logout, theme, toggleTheme } = useAuth();
+    const { user, hasRole, logout } = useAuth();
     const location = useLocation();
 
     const renderItem = (item: NavItem) => {
@@ -116,22 +118,9 @@ export const Sidebar = () => {
                 })}
             </nav>
 
-            {/* Theme Toggle & User footer */}
+            {/* User footer */}
             <div className="p-4 bg-[var(--pm-bg-alt)] border-t border-[var(--pm-border)] transition-colors">
                 
-                <button 
-                    onClick={toggleTheme}
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[11px] font-bold text-[var(--pm-text-muted)] hover:bg-[var(--pm-white)] border border-transparent hover:border-[var(--pm-border)] transition-all mb-4"
-                >
-                    <div className="flex items-center gap-2">
-                        {theme === 'light' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
-                        {theme === 'light' ? 'DARK MODE' : 'LIGHT MODE'}
-                    </div>
-                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${theme === 'dark' ? 'bg-[#c41230]' : 'bg-slate-300'}`}>
-                        <div className={`w-3 h-3 rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
-                    </div>
-                </button>
-
                 <div className="px-3 py-3 rounded-2xl bg-[var(--pm-white)] border border-[var(--pm-border)] shadow-sm mb-3">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-[#c41230] flex items-center justify-center text-white text-sm font-bold shadow-md" style={{ fontFamily: 'Poppins' }}>

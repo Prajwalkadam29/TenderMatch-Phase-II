@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { FloatingDots } from './FloatingDots';
+import { NotificationToast } from './NotificationToast';
 
 export const Layout = () => {
     return (
@@ -17,6 +18,9 @@ export const Layout = () => {
                     <Outlet />
                 </main>
             </div>
+            
+            {/* Global toast notification for auto-matches */}
+            <NotificationToast />
         </div>
     );
 };

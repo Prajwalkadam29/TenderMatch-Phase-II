@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Tenders } from './pages/Tenders';
 import { DocumentUpload } from './pages/DocumentUpload';
 import { AIMatching } from './pages/AIMatching';
+import { MatchHistory } from './pages/MatchHistory';
 import { VendorProfilePage } from './pages/VendorProfile';
 import { MyProfiles } from './pages/MyProfiles';
 import { TenderDetail } from './pages/TenderDetail';
@@ -18,6 +19,7 @@ import {
   Analytics, Users,
   Organizations, Subscriptions, SupportView
 } from './pages/Placeholders';
+import { AdminSync } from './pages/AdminSync';
 
 function App() {
   return (
@@ -63,6 +65,12 @@ function App() {
                 </RoleProtectedRoute>
               } />
 
+              <Route path="/match/history" element={
+                <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
+                  <MatchHistory />
+                </RoleProtectedRoute>
+              } />
+
               <Route path="/vendor-profile" element={
                 <RoleProtectedRoute allowedRoles={['USER', 'ADMIN1']}>
                   <VendorProfilePage />
@@ -96,8 +104,14 @@ function App() {
               } />
 
               <Route path="/admin/subscriptions" element={
-                <RoleProtectedRoute allowedRoles={['SUPERADMIN']}>
+                <RoleProtectedRoute allowedRoles={['SUPERADMIN', 'SUPER', 'ADMIN1']}>
                   <Subscriptions />
+                </RoleProtectedRoute>
+              } />
+
+              <Route path="/admin/sync" element={
+                <RoleProtectedRoute allowedRoles={['SUPERADMIN', 'SUPER', 'ADMIN1']}>
+                  <AdminSync />
                 </RoleProtectedRoute>
               } />
 

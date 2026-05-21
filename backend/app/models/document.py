@@ -7,7 +7,7 @@ Collection: documents
 """
 
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 from datetime import datetime
 
@@ -21,8 +21,7 @@ class StructuredData(BaseModel):
     certifications: list[str] = []
     location: Optional[str] = None
 
-    class Config:
-        extra = "allow"   # don't blow up if Groq adds unexpected sub-fields
+    model_config = ConfigDict(extra="allow")   # don't blow up if Groq adds unexpected sub-fields
 
 
 # ─── Main DB model ────────────────────────────────────────────────────────────
@@ -53,9 +52,7 @@ class DocumentInDB(BaseModel):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 # ─── Helper: MongoDB dict → serialisable dict ─────────────────────────────────
@@ -75,12 +72,14 @@ def document_helper(doc: dict) -> dict:
         "search_text": doc.get("search_text", ""),
         "file_url": doc.get("file_url"),
         "embedding_id": doc.get("embedding_id"),   # faiss_id for semantic search
+        "error_detail": doc.get("error_detail"),    # reason for failure / degradation
         "created_at": (
             doc["created_at"].isoformat()
             if isinstance(doc.get("created_at"), datetime)
             else str(doc.get("created_at", ""))
         ),
     }
+
 
 
 # ─── Helper: build search_text from structured data ──────────────────────────

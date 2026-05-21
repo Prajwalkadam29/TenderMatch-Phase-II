@@ -5,7 +5,7 @@ Pydantic response schemas for the /upload endpoints.
 """
 
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StructuredDataResponse(BaseModel):
@@ -15,8 +15,7 @@ class StructuredDataResponse(BaseModel):
     certifications: list[str] = []
     location: Optional[str] = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class DocumentUploadResponse(BaseModel):
@@ -33,8 +32,8 @@ class DocumentUploadResponse(BaseModel):
     search_text: str = ""
     file_url: Optional[str]
     embedding_id: Optional[int] = None    # FAISS index id; None if embedding failed/pending
+    error_detail: Optional[str] = None    # Populated when status is "failed" or "completed_degraded"
     created_at: str
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 

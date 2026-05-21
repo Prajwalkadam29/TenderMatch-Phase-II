@@ -741,6 +741,10 @@ The agentic layer implements a **supervisor-worker** architecture:
 | Feedback Learning Agent | Match improvement via vendor feedback signals | Phase 4 |
 | Dashboard Analytics | Tender pipeline, match rates, and conversion metrics | Phase 4 |
 | Multi-Tenant SaaS | Enterprise subscription and access tier management | Phase 5 |
+| Scheduled Tender Scraping | Nightly syncs via Bidassist & Firecrawl with deduplication | Phase 5 |
+| Vendor Profile Auto-Fill | AI-powered unstructured document extraction & human-in-the-loop review | Phase 6 |
+| Agentic RAG | Dynamic planner node enabling hybrid retrieval & reranking | Phase 6 |
+| Conversational RAG | Direct chat with tender feature grounded in document embeddings | Phase 7 |
 
 ---
 

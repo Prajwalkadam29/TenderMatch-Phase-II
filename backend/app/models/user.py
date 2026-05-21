@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from bson import ObjectId
 from datetime import datetime
 
@@ -31,9 +31,7 @@ class UserInDB(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 def user_helper(user: dict) -> dict:
